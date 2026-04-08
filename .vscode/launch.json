@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:xhammer}",
+      "name": "Debug xhammer",
+      "target": "xhammer",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug xhammer"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:xhammer}",
+      "name": "Release xhammer",
+      "target": "xhammer",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release xhammer"
+    }
+  ]
+}
