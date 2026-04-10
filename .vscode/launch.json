@@ -19,6 +19,26 @@
       "target": "xhammer",
       "configuration": "release",
       "preLaunchTask": "swift: Build Release xhammer"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:xhammer}",
+      "name": "Debug xhammerd",
+      "target": "xhammerd",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug xhammerd"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:xhammer}",
+      "name": "Release xhammerd",
+      "target": "xhammerd",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release xhammerd"
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(swift build:*)",
+      "Bash(swift test:*)",
+      "Bash(/Users/kaishin/Developer/Spikes/xhammer/.build/debug/xhammer)",
+      "Bash(/Users/kaishin/Developer/Spikes/xhammer/.build/debug/xhammer --help)",
+      "Bash(/Users/kaishin/Developer/Spikes/xhammer/.build/debug/xhammer unknown-cmd:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(/Users/kaishin/Developer/Spikes/xhammer/.build/debug/xhammer build:*)",
+      "Bash(xhammer call:*)",
+      "Bash(make install:*)"
+    ]
+  }
+}

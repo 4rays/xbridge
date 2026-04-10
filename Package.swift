@@ -1,5 +1,4 @@
 // swift-tools-version: 6.3
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
@@ -15,18 +14,27 @@ let package = Package(
   targets: [
     .executableTarget(
       name: "xhammer",
-      dependencies: ["XhammerCore"]
+      dependencies: ["XhammerCore"],
+      path: "Sources/xhammer"
     ),
     .executableTarget(
       name: "xhammerd",
-      dependencies: ["XhammerCore"]
+      dependencies: ["XhammerCore"],
+      path: "Sources/xhammerd"
     ),
     .target(
-      name: "XhammerCore"
+      name: "XhammerCore",
+      path: "Sources/XhammerCore"
     ),
     .testTarget(
       name: "XhammerCoreTests",
-      dependencies: ["XhammerCore"]
+      dependencies: ["XhammerCore"],
+      path: "Tests/XhammerCoreTests"
+    ),
+    .testTarget(
+      name: "xhammerTests",
+      dependencies: ["XhammerCore"],
+      path: "Tests/xhammerTests"
     )
   ],
   swiftLanguageModes: [.v6]
