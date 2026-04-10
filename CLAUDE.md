@@ -1,0 +1,25 @@
+# xhammer
+
+## Build & Install
+- `swift build` — debug build
+- `swift build -c release` — release build
+- `make install` — release build + install to `~/.local/bin` (no sudo needed)
+- Binaries: `.build/debug/xhammer`, `.build/debug/xhammerd`
+
+## Running
+- Start daemon manually: `.build/debug/xhammerd &`
+- Daemon socket: `~/Library/Application Support/xhammer/daemon.sock`
+- Daemon log: `~/Library/Application Support/xhammer/daemon.log`
+- `xhammer stop` to stop a running daemon before testing a new build
+
+## Xcode MCP Bridge
+- Tool names are PascalCase: `XcodeListWindows`, `BuildProject`, `XcodeGrep`, etc.
+- Run `xhammer tools` to see the live list from the bridge
+- Run `xhammer tool-schema <name>` to inspect argument schemas
+- Bridge response format: `{"structuredContent":{"message":"..."},"content":[...]}`
+- `structuredContent.message` is plain text; `content[0].text` is JSON-encoded
+
+## Swift Concurrency (Swift 6)
+- All global state must be `Sendable`; `Command` closures need `@Sendable`
+- `FileHandle` in structs needs `@unchecked Sendable`
+- Non-Sendable types stored in actors need `nonisolated(unsafe)`
