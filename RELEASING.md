@@ -2,20 +2,23 @@
 
 ## Steps
 
-1. **Bump version** in `Sources/xhammer/main.swift` (`xhammer X.Y.Z`).
+1. **Bump version** in `Sources/xhammer/main.swift` — update the string in the `version` handler to `xhammer X.Y.Z`. Do this **before** building.
 
 2. **Build release binaries:**
+
    ```sh
    swift build -c release
    ```
 
 3. **Tag and push:**
+
    ```sh
    git tag vX.Y.Z
    git push origin vX.Y.Z
    ```
 
 4. **Package binaries:**
+
    ```sh
    rm -rf /tmp/xhammer-bin && mkdir /tmp/xhammer-bin
    cp .build/release/xhammer .build/release/xhammerd /tmp/xhammer-bin/
@@ -24,6 +27,7 @@
    ```
 
 5. **Create GitHub release and upload tarball:**
+
    ```sh
    gh release create vX.Y.Z --title "vX.Y.Z" --notes "..." --latest
    gh release upload vX.Y.Z /tmp/xhammer-X.Y.Z-macos.tar.gz
