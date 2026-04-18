@@ -19,7 +19,7 @@ if commandName == "--help" || commandName == "-h" || commandName == "help" {
 
 // Handle version
 if commandName == "--version" || commandName == "-v" || commandName == "version" {
-  print("xhammer 0.1.1")
+  print("xhammer 0.1.2")
   exit(0)
 }
 

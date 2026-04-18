@@ -195,13 +195,14 @@ enum Commands {
 
   static let issuesCommand = Command(
     name: "issues",
-    usage: "issues <tab-id>           Show build issues in the specified tab",
+    usage: "issues <tab-id> [severity]  Show build issues (severity: error|warning|remark, default: error)",
     minArgs: 1
   ) { args in
-    callToolRequest(
-      tool: XcodeTool.listIssues,
-      arguments: ["tabIdentifier": .string(args[0])]
-    )
+    var dict: [String: JSONValue] = ["tabIdentifier": .string(args[0])]
+    if args.count > 1 {
+      dict["severity"] = .string(args[1])
+    }
+    return callToolRequest(tool: XcodeTool.listIssues, arguments: .object(dict))
   }
 
   static let buildLogCommand = Command(
