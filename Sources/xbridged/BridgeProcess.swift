@@ -77,12 +77,19 @@ actor BridgeProcess {
     startStdoutReader(fd: stdoutPipe.fileHandleForReading.fileDescriptor)
   }
 
-  func stop() {
+  func stop() async {
     if let process = handles?.process, process.isRunning {
-      process.terminate()
-      let deadline = Date().addingTimeInterval(1.0)
-      while process.isRunning, Date() < deadline {
-        Thread.sleep(forTimeInterval: 0.05)
+      try? handles?.stdinPipe.fileHandleForWriting.close()
+      let gracefulDeadline = Date().addingTimeInterval(1.0)
+      while process.isRunning, Date() < gracefulDeadline {
+        try? await Task.sleep(nanoseconds: 50_000_000)
+      }
+      if process.isRunning {
+        process.terminate()
+        let termDeadline = Date().addingTimeInterval(1.0)
+        while process.isRunning, Date() < termDeadline {
+          try? await Task.sleep(nanoseconds: 50_000_000)
+        }
       }
       if process.isRunning {
         Darwin.kill(process.processIdentifier, SIGKILL)

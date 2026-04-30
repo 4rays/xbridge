@@ -77,38 +77,26 @@ public enum DaemonProcessCleanup {
 
   private static func findRunningDaemonPIDs() -> [Int32] {
     let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/bin/ps")
-    process.arguments = ["-x", "-o", "pid=", "-o", "comm="]
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+    process.arguments = ["-x", "xbridged"]
 
     let pipe = Pipe()
     process.standardOutput = pipe
-    process.standardError = FileHandle(forWritingAtPath: "/dev/null")
+    process.standardError = Pipe()
 
     do {
       try process.run()
-      process.waitUntilExit()
     } catch {
       return []
     }
 
     let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
     guard let output = String(data: data, encoding: .utf8) else {
       return []
     }
 
-    return output.split(separator: "\n").compactMap { line -> Int32? in
-      let parts = line.split(maxSplits: 1, whereSeparator: \.isWhitespace)
-      guard parts.count == 2, let pid = Int32(parts[0]) else {
-        return nil
-      }
-
-      let command = String(parts[1])
-      guard URL(fileURLWithPath: command).lastPathComponent == "xbridged" else {
-        return nil
-      }
-
-      return pid
-    }
+    return output.split(whereSeparator: \.isNewline).compactMap { Int32($0) }
   }
 
   private static func processExists(_ pid: Int32) -> Bool {

@@ -40,16 +40,13 @@ do {
   let client = DaemonClient()
 
   if request.method == LocalRPCMethod.stop {
-    let response = try? client.send(request, autoStart: false)
-    Thread.sleep(forTimeInterval: 0.2)
-    let cleanup = DaemonProcessCleanup.cleanupExistingDaemons()
-
-    if let response {
+    if let response = try? client.send(request, autoStart: false) {
       let output = OutputFormatter.format(response: response, method: request.method)
       print(output)
       exit(response.ok ? 0 : 1)
     }
 
+    let cleanup = DaemonProcessCleanup.cleanupExistingDaemons()
     print(cleanup.didCleanup ? "stopped" : "xbridged is not running")
     exit(0)
   }
