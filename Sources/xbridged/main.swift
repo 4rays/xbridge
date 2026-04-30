@@ -10,19 +10,6 @@ Darwin.setsid()
 // Redirect stdin to /dev/null
 _ = Darwin.freopen("/dev/null", "r", Darwin.stdin)
 
-// MARK: - Signal handling
-
-signal(SIGTERM, SIG_IGN)
-signal(SIGINT, SIG_IGN)
-
-let sigterm = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
-sigterm.setEventHandler { exit(0) }
-sigterm.resume()
-
-let sigint = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
-sigint.setEventHandler { exit(0) }
-sigint.resume()
-
 // MARK: - Logging
 
 _ = try? XbridgePaths.ensureDirectoryExists()
@@ -47,6 +34,29 @@ logger.info("xbridged starting (PID \(ProcessInfo.processInfo.processIdentifier)
 
 let daemon = DaemonServer(logger: logger)
 
+// MARK: - Signal handling
+
+signal(SIGTERM, SIG_IGN)
+signal(SIGINT, SIG_IGN)
+
+let sigterm = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+sigterm.setEventHandler {
+  Task {
+    await daemon.shutdown()
+    exit(0)
+  }
+}
+sigterm.resume()
+
+let sigint = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+sigint.setEventHandler {
+  Task {
+    await daemon.shutdown()
+    exit(0)
+  }
+}
+sigint.resume()
+
 do {
   try await daemon.run()
 } catch is CancellationError {
@@ -55,5 +65,6 @@ do {
   exit(0)
 } catch {
   logger.error("Fatal: \(error.localizedDescription)")
+  await daemon.shutdown()
   exit(1)
 }

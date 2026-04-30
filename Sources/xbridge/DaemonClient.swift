@@ -12,8 +12,8 @@ struct DaemonClient {
 
   // MARK: - Send
 
-  func send(_ request: LocalRPCRequest) throws -> LocalRPCResponse {
-    let fd = try connectOrSpawn()
+  func send(_ request: LocalRPCRequest, autoStart: Bool = true) throws -> LocalRPCResponse {
+    let fd = try connectOrSpawn(autoStart: autoStart)
     defer { Darwin.close(fd) }
 
     let data = try JSONEncoder().encode(request)
@@ -37,9 +37,13 @@ struct DaemonClient {
 
   // MARK: - Connection
 
-  private func connectOrSpawn() throws -> Int32 {
+  private func connectOrSpawn(autoStart: Bool) throws -> Int32 {
     // Try connecting first
     if let fd = try? connect() { return fd }
+
+    guard autoStart else {
+      throw XbridgeError.daemonNotRunning
+    }
 
     // Spawn daemon and retry
     try spawnDaemon()
@@ -80,10 +84,14 @@ struct DaemonClient {
   }
 
   private func spawnDaemon() throws {
+    _ = DaemonProcessCleanup.cleanupExistingDaemons { message in
+      fputs("\(message)\n", stderr)
+    }
+
     let daemonURL = findDaemonExecutable()
     guard let daemonURL, FileManager.default.isExecutableFile(atPath: daemonURL.path) else {
       throw XbridgeError.connectionFailed(
-        "Cannot find xbridged. Make sure it is installed alongside xhammer."
+        "Cannot find xbridged. Make sure it is installed alongside xbridge."
       )
     }
 

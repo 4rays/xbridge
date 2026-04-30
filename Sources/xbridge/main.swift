@@ -38,6 +38,22 @@ guard commandArgs.count >= command.minArgs else {
 do {
   let request = try command.build(commandArgs)
   let client = DaemonClient()
+
+  if request.method == LocalRPCMethod.stop {
+    let response = try? client.send(request, autoStart: false)
+    Thread.sleep(forTimeInterval: 0.2)
+    let cleanup = DaemonProcessCleanup.cleanupExistingDaemons()
+
+    if let response {
+      let output = OutputFormatter.format(response: response, method: request.method)
+      print(output)
+      exit(response.ok ? 0 : 1)
+    }
+
+    print(cleanup.didCleanup ? "stopped" : "xbridged is not running")
+    exit(0)
+  }
+
   let response = try client.send(request)
 
   let output = OutputFormatter.format(response: response, method: request.method)
