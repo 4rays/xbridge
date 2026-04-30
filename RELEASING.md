@@ -33,10 +33,20 @@
    gh release upload vX.Y.Z /tmp/xbridge-X.Y.Z-macos.tar.gz
    ```
 
-6. **Update Homebrew formula** in `4rays/homebrew-tap`:
-   - `url` → new tarball URL
+6. **Update Homebrew formula** (`4rays/homebrew-tap/Formula/xbridge.rb`):
+   - `url` → new tarball URL (github.com/4rays/xbridge/releases/...)
    - `sha256` → output from step 4
    - `version` → new version
+   - `bin.install` → simplify to plain installs (no `=>` rename needed from v0.1.3+):
+
+     ```ruby
+     bin.install "xbridge"
+     bin.install "xbridged"
+     ```
+
+   > **Note:** v0.1.2 formula used `"xhammer" => "xbridge"` rename syntax because that
+   > tarball predated the project rename. From v0.1.3 onward the tarball contains
+   > `xbridge`/`xbridged` directly — drop the rename arrows.
 
 7. **Commit and push** the formula update.
 
