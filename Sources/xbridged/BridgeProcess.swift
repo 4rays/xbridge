@@ -78,7 +78,17 @@ actor BridgeProcess {
   }
 
   func stop() {
-    handles?.process.terminate()
+    if let process = handles?.process, process.isRunning {
+      process.terminate()
+      let deadline = Date().addingTimeInterval(1.0)
+      while process.isRunning, Date() < deadline {
+        Thread.sleep(forTimeInterval: 0.05)
+      }
+      if process.isRunning {
+        Darwin.kill(process.processIdentifier, SIGKILL)
+        process.waitUntilExit()
+      }
+    }
     handles = nil
     stdinFD = -1
     state = .stopped

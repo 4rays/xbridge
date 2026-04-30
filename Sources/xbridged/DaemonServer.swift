@@ -22,6 +22,12 @@ actor DaemonServer {
 
   func run() async throws {
     try XbridgePaths.ensureDirectoryExists()
+    _ = DaemonProcessCleanup.cleanupExistingDaemons(
+      excluding: Int32(ProcessInfo.processInfo.processIdentifier)
+    ) { [logger] message in
+      logger.warning(message)
+    }
+
     await stateStore.writePID(Int32(ProcessInfo.processInfo.processIdentifier))
 
     logger.info("Starting MCP client...")
