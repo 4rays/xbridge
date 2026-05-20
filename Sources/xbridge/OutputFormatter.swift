@@ -36,9 +36,10 @@ struct OutputFormatter {
     let xcodeRunning = NSWorkspace.shared.runningApplications
       .contains { $0.bundleIdentifier == "com.apple.dt.Xcode" }
     let xcode = xcodeRunning ? "open" : "closed"
+    let effectiveBridge = xcodeRunning ? bridge : "unhealthy"
     return """
       daemon : \(daemon)
-      bridge : \(bridge)
+      bridge : \(effectiveBridge)
       tools  : \(tools)
       xcode  : \(xcode)
       """
