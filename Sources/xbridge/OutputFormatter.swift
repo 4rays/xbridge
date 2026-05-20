@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import XbridgeCore
 
@@ -32,10 +33,14 @@ struct OutputFormatter {
     let daemon = result["daemon"]?.stringValue ?? "?"
     let bridge = result["bridge"]?.stringValue ?? "?"
     let tools = result["tools"]?.intValue.map(String.init) ?? "?"
+    let xcodeRunning = NSWorkspace.shared.runningApplications
+      .contains { $0.bundleIdentifier == "com.apple.dt.Xcode" }
+    let xcode = xcodeRunning ? "open" : "closed"
     return """
       daemon : \(daemon)
       bridge : \(bridge)
       tools  : \(tools)
+      xcode  : \(xcode)
       """
   }
 
