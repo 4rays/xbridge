@@ -1,0 +1,21 @@
+{
+  "name": "xbridge",
+  "version": "2.0.0",
+  "description": "Skill for interacting with Xcode projects via the xbridge CLI tool.",
+  "author": {
+    "name": "Reda Lemeden",
+    "email": "git@redalemeden.com"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/4rays/xbridge",
+  "repository": "https://github.com/4rays/xbridge",
+  "keywords": [
+    "xcode",
+    "xbridge",
+    "ios",
+    "macos",
+    "swift",
+    "build",
+    "test"
+  ]
+}
