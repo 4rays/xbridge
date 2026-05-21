@@ -1,8 +1,13 @@
 # xbridge
 
-A daemonized CLI for Xcode's MCP bridge. Keeps a single long-lived connection to `xcrun mcpbridge` so Xcode only prompts for permission once per daemon session.
+A daemonized CLI that keeps a single long-lived connection to Xcode's MCP bridge, so Xcode only prompts for permission once per daemon session.
 
 ## Install
+
+> [!TIP]
+> The easiest way to install `xbridge` is by pointing your agent to this README. If you'd rather do it manually, follow the instructions below.
+
+### Install the Bridge
 
 ```bash
 brew tap 4rays/tap
@@ -19,8 +24,46 @@ sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 > [!WARNING]
 > In Xcode, enable MCP before using `xbridge`: open **Settings → Intelligence → Model Context Protocol** and turn it on.
 
+### Install the Skill
+
+#### Option 1: CLI Install (Recommended)
+
+```bash
+# Install all skills
+npx skills add 4rays/xbridge
+
+# Install specific skills
+npx skills add 4rays/xbridge --skill xbridge
+
+# List available skills
+npx skills add 4rays/xbridge --list
 ```
-xbridge → unix socket → xbridged → stdio → xcrun mcpbridge → Xcode
+
+This automatically installs to your `.agents/skills/` directory (and symlinks into `.claude/skills/` for Claude Code compatibility).
+
+#### Option 2: Claude Code Plugin
+
+```bash
+# Add the marketplace
+/plugin marketplace add 4rays/xbridge
+
+# Install the plugin
+/plugin install xbridge
+```
+
+Or load directly from a local path:
+
+```bash
+claude --plugin-dir /path/to/xbridge
+```
+
+> Claude Code specific. For other agents, use Option 1 or Option 3.
+
+#### Option 3: Clone and Copy
+
+```bash
+git clone https://github.com/4rays/xbridge.git
+cp -r xbridge/skills/* .agents/skills/
 ```
 
 ## Usage
@@ -83,7 +126,7 @@ Installs `xbridge` and `xbridged` to `~/.local/bin`. Requires Swift 6.3+ and Xco
 
 ## How It Works
 
-`xbridged` owns the only connection to `xcrun mcpbridge`. It handles MCP initialization, tool discovery, and request correlation. The CLI connects to the daemon over a Unix domain socket at `~/Library/Application Support/xbridge/daemon.sock`.
+`xbridged` owns the only connection to Xcode's MCP bridge. It handles tool discovery and request correlation. The CLI connects to the daemon over a Unix domain socket at `~/Library/Application Support/xbridge/daemon.sock`.
 
 Because the daemon process is stable across CLI invocations, Xcode only shows the permission prompt once per session.
 
