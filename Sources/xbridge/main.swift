@@ -20,7 +20,7 @@ if commandName == "--help" || commandName == "-h" || commandName == "help" {
 
 // Handle version
 if commandName == "--version" || commandName == "-v" || commandName == "version" {
-  print("xbridge 0.1.4")
+  print("xbridge 0.2.0")
   exit(0)
 }
 
