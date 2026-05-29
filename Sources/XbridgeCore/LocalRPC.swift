@@ -46,7 +46,7 @@ public struct LocalRPCError: Codable, Sendable {
 public enum LocalRPCMethod {
   public static let status = "status"
   public static let stop = "stop"
-  public static let restart = "restart"
+  public static let reinitialize = "reinitialize"
   public static let callTool = "callTool"
   public static let tools = "tools"
   public static let toolSchema = "toolSchema"

@@ -21,10 +21,10 @@ This skill enables AI agents to interact with Xcode projects via the **xbridge C
 > ls /Applications/Xcode*.app
 > ```
 >
-> If the bridge is not running, restart it:
+> If the bridge shows as unhealthy, re-initialize it:
 >
 > ```bash
-> xbridge restart
+> xbridge reinitialize
 > ```
 
 ## Setup
@@ -49,10 +49,16 @@ If the output indicates the bridge is not running, tell the user:
 > open MyApp.xcodeproj   # or .xcworkspace
 > ```
 >
-> Then restart the bridge:
+> Then check status again — the daemon auto-recovers the bridge once Xcode is running:
 >
+> ```bash
+> xbridge status
 > ```
-> xbridge restart
+>
+> If the bridge shows as unhealthy after Xcode is open, re-initialize the MCP session:
+>
+> ```bash
+> xbridge reinitialize
 > ```
 >
 > If this is your first time connecting, Xcode may show a permission dialog — click **Allow** to proceed.
@@ -112,11 +118,10 @@ Commands most likely to need a timeout: `build`, `test`, `test-run`, `build-log`
 
 ### Daemon & Status
 
-| Command           | Description                   |
-| ----------------- | ----------------------------- |
-| `xbridge status`  | Show daemon and bridge status |
-| `xbridge stop`    | Stop the daemon               |
-| `xbridge restart` | Restart the Xcode MCP bridge  |
+| Command                  | Description                                        |
+| ------------------------ | -------------------------------------------------- |
+| `xbridge status`         | Show daemon and bridge status                      |
+| `xbridge reinitialize`   | Re-run MCP handshake without restarting the bridge |
 
 ### Discovery
 
@@ -231,7 +236,7 @@ xbridge docs "SwiftUI List" SwiftUI
 Install with `brew tap 4rays/tap && brew install xbridge`.
 
 **`xbridge status` shows daemon not running**
-Run `xbridge restart` and ensure Xcode is open with a project.
+Ensure Xcode is open with a project. The daemon auto-starts on the next command. If the bridge shows unhealthy after Xcode is running, run `xbridge reinitialize`.
 
 **No tab IDs from `xbridge list-windows`**
 Xcode must be running with a project open. Run `open MyApp.xcodeproj` first.

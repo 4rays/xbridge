@@ -90,8 +90,8 @@ actor DaemonServer {
       return await handleStatus(id: request.id)
     case LocalRPCMethod.stop:
       return await handleStop(id: request.id)
-    case LocalRPCMethod.restart:
-      return await handleRestart(id: request.id)
+    case LocalRPCMethod.reinitialize:
+      return await handleReinitialize(id: request.id)
     case LocalRPCMethod.tools:
       return await handleTools(id: request.id)
     case LocalRPCMethod.toolSchema:
@@ -125,10 +125,10 @@ actor DaemonServer {
     return .success(id: id, result: ["message": "stopping"])
   }
 
-  private func handleRestart(id: String) async -> LocalRPCResponse {
+  private func handleReinitialize(id: String) async -> LocalRPCResponse {
     do {
-      try await mcpClient.restart()
-      return .success(id: id, result: ["message": "restarted"])
+      try await mcpClient.reinitialize()
+      return .success(id: id, result: ["message": "reinitialized"])
     } catch {
       return .failure(id: id, message: error.localizedDescription)
     }

@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import XbridgeCore
 
@@ -40,6 +41,10 @@ do {
   let client = DaemonClient()
 
   if request.method == LocalRPCMethod.stop {
+    guard Darwin.isatty(STDIN_FILENO) == 1 || commandArgs.contains("--force") else {
+      fputs("error: 'stop' requires an interactive terminal; use --force to override\n", stderr)
+      exit(1)
+    }
     if let response = try? client.send(request, autoStart: false) {
       let output = OutputFormatter.format(response: response, method: request.method)
       print(output)

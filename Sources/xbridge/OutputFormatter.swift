@@ -18,7 +18,7 @@ struct OutputFormatter {
     switch method {
     case LocalRPCMethod.status:
       return formatStatus(result)
-    case LocalRPCMethod.stop, LocalRPCMethod.restart:
+    case LocalRPCMethod.stop, LocalRPCMethod.reinitialize:
       return result["message"]?.stringValue ?? "ok"
     case LocalRPCMethod.callTool:
       return formatToolResult(result)

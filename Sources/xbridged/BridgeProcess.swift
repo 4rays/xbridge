@@ -15,6 +15,7 @@ actor BridgeProcess {
   private var stdinFD: Int32 = -1
   private var nextRequestID = 1
   private var pendingResponses: [Int: CheckedContinuation<MCPResponse, Error>] = [:]
+  private var terminationWaiters: [CheckedContinuation<Void, Never>] = []
   private var readTask: Task<Void, Never>?
   private let logger: Logger
 
@@ -160,6 +161,15 @@ actor BridgeProcess {
     }
   }
 
+  /// Suspend until the bridge process stops (returns immediately if already stopped).
+  func waitUntilTerminated() async {
+    if case .stopped = state { return }
+    if case .failed = state { return }
+    await withCheckedContinuation { cont in
+      terminationWaiters.append(cont)
+    }
+  }
+
   private func handleTermination() {
     logger.warning("Bridge process terminated")
     state = .stopped
@@ -168,6 +178,8 @@ actor BridgeProcess {
     readTask?.cancel()
     readTask = nil
     failPending(XbridgeError.bridgeNotRunning)
+    for cont in terminationWaiters { cont.resume() }
+    terminationWaiters.removeAll()
   }
 
   private func failPending(_ error: Error) {

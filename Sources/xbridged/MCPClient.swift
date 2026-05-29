@@ -20,12 +20,42 @@ actor MCPClient {
     try await initialize()
     knownTools = try await listTools()
     logger.info("MCP ready — \(knownTools.count) tools discovered")
+    startHealthMonitor()
   }
 
   func stop() async {
     await bridge.stop()
     isInitialized = false
     knownTools = []
+  }
+
+  /// Re-run MCP handshake over the existing bridge process — no new process, no new Xcode connection.
+  func reinitialize() async throws {
+    guard await bridge.isRunning else {
+      throw XbridgeError.bridgeNotRunning
+    }
+    isInitialized = false
+    knownTools = []
+    try await initialize()
+    knownTools = try await listTools()
+    logger.info("MCP re-initialized — \(knownTools.count) tools")
+  }
+
+  private func startHealthMonitor() {
+    Task { [weak self] in
+      guard let self else { return }
+      while !Task.isCancelled {
+        await self.bridge.waitUntilTerminated()
+        guard !Task.isCancelled else { break }
+        self.logger.warning("Bridge died — auto-recovering in 2s...")
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        do {
+          try await self.start()
+        } catch {
+          self.logger.warning("Auto-recovery failed: \(error.localizedDescription)")
+        }
+      }
+    }
   }
 
   // MARK: - MCP initialization
@@ -104,13 +134,4 @@ actor MCPClient {
     return result
   }
 
-  // MARK: - Restart
-
-  func restart() async throws {
-    logger.info("Restarting bridge...")
-    await bridge.stop()
-    isInitialized = false
-    knownTools = []
-    try await start()
-  }
 }

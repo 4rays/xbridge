@@ -16,7 +16,7 @@ enum Commands {
   static let all: [Command] = [
     statusCommand,
     stopCommand,
-    restartCommand,
+    reinitializeCommand,
     toolsCommand,
     toolSchemaCommand,
     callCommand,
@@ -68,18 +68,18 @@ enum Commands {
 
   static let stopCommand = Command(
     name: "stop",
-    usage: "stop                      Stop the daemon",
+    usage: "stop [--force]            Stop the daemon (requires interactive terminal)",
     minArgs: 0
   ) { _ in
     LocalRPCRequest(method: LocalRPCMethod.stop)
   }
 
-  static let restartCommand = Command(
-    name: "restart",
-    usage: "restart                   Restart the Xcode MCP bridge",
+  static let reinitializeCommand = Command(
+    name: "reinitialize",
+    usage: "reinitialize              Re-run MCP handshake without restarting the bridge",
     minArgs: 0
   ) { _ in
-    LocalRPCRequest(method: LocalRPCMethod.restart)
+    LocalRPCRequest(method: LocalRPCMethod.reinitialize)
   }
 
   static let toolsCommand = Command(
