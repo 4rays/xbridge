@@ -171,6 +171,7 @@ actor BridgeProcess {
   }
 
   private func handleTermination() {
+    guard case .running = state else { return }
     logger.warning("Bridge process terminated")
     state = .stopped
     handles = nil
