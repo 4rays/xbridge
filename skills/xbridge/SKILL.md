@@ -247,7 +247,7 @@ Xcode must be running with a project open. Run `open MyApp.xcodeproj` first.
 Go to **Xcode > Settings > Intelligence > Model Context Protocol** and enable Xcode Tools.
 
 **MCP permission denied (bridge fallback)**
-In Xcode Settings, revoke the process entry under MCP, reconnect to trigger the dialog, then click **Allow**.
+In Xcode Settings, revoke the process entry under MCP, run `xbridge relink` to trigger the dialog, then ask the user to click **Allow**.
 
 ## Project Context
 
