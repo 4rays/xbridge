@@ -7,6 +7,7 @@ actor MCPClient {
   private let logger: Logger
   private(set) var knownTools: [MCPTool] = []
   private(set) var isInitialized = false
+  private(set) var isRelinking = false
 
   init(bridge: BridgeProcess, logger: Logger) {
     self.bridge = bridge
@@ -30,15 +31,18 @@ actor MCPClient {
   }
 
   /// Re-run MCP handshake over the existing bridge process — no new process, no new Xcode connection.
-  func reinitialize() async throws {
+  func relink() async throws {
+    guard !isRelinking, !isInitialized else { return }
     guard await bridge.isRunning else {
       throw XbridgeError.bridgeNotRunning
     }
+    isRelinking = true
+    defer { isRelinking = false }
     isInitialized = false
     knownTools = []
     try await initialize()
     knownTools = try await listTools()
-    logger.info("MCP re-initialized — \(knownTools.count) tools")
+    logger.info("MCP relinked — \(knownTools.count) tools")
   }
 
   private func startHealthMonitor() {

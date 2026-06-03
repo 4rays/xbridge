@@ -24,7 +24,7 @@ This skill enables AI agents to interact with Xcode projects via the **xbridge C
 > If the bridge shows as unhealthy, re-initialize it:
 >
 > ```bash
-> xbridge reinitialize
+> xbridge relink
 > ```
 
 ## Setup
@@ -55,10 +55,10 @@ If the output indicates the bridge is not running, tell the user:
 > xbridge status
 > ```
 >
-> If the bridge shows as unhealthy after Xcode is open, re-initialize the MCP session:
+> If the bridge shows as unhealthy after Xcode is open, relink the MCP session:
 >
 > ```bash
-> xbridge reinitialize
+> xbridge relink
 > ```
 >
 > If this is your first time connecting, Xcode may show a permission dialog — click **Allow** to proceed.
@@ -121,7 +121,7 @@ Commands most likely to need a timeout: `build`, `test`, `test-run`, `build-log`
 | Command                  | Description                                        |
 | ------------------------ | -------------------------------------------------- |
 | `xbridge status`         | Show daemon and bridge status                      |
-| `xbridge reinitialize`   | Re-run MCP handshake without restarting the bridge |
+| `xbridge relink`         | Re-run MCP handshake without restarting the bridge |
 
 ### Discovery
 
@@ -236,7 +236,7 @@ xbridge docs "SwiftUI List" SwiftUI
 Install with `brew tap 4rays/tap && brew install xbridge`.
 
 **`xbridge status` shows daemon not running**
-Ensure Xcode is open with a project. The daemon auto-starts on the next command. If the bridge shows unhealthy after Xcode is running, run `xbridge reinitialize`.
+Ensure Xcode is open with a project. The daemon auto-starts on the next command. If the bridge shows unhealthy after Xcode is running, run `xbridge relink`.
 
 **No tab IDs from `xbridge list-windows`**
 Xcode must be running with a project open. Run `open MyApp.xcodeproj` first.
