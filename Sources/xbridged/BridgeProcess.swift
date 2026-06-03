@@ -27,7 +27,9 @@ actor BridgeProcess {
   }
 
   var isRunning: Bool {
-    if case .running = state { return true }
+    if case .running = state {
+      return handles?.process.isRunning ?? false
+    }
     return false
   }
 
