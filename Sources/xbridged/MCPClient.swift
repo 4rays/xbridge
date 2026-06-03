@@ -30,6 +30,15 @@ actor MCPClient {
     knownTools = []
   }
 
+  /// Live probe: sends tools/list and returns true if the bridge responds without error.
+  func ping() async -> Bool {
+    guard await bridge.isRunning else { return false }
+    let id = await bridge.nextID()
+    let request = MCPRequest(id: id, method: "tools/list", params: [:])
+    guard let response = try? await bridge.send(request) else { return false }
+    return response.error == nil
+  }
+
   /// Re-run MCP handshake over the existing bridge process — no new process, no new Xcode connection.
   func relink() async throws {
     guard !isRelinking, !isInitialized else { return }

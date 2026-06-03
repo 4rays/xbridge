@@ -107,9 +107,9 @@ actor DaemonServer {
 
   private func handleStatus(id: String) async -> LocalRPCResponse {
     let relinking = await mcpClient.isRelinking
-    let bridgeOK = await mcpClient.isInitialized
+    let bridgeOK = relinking ? false : await mcpClient.ping()
     let toolCount = await mcpClient.knownTools.count
-    let bridgeStatus = relinking ? "relinking" : (bridgeOK ? "healthy" : "not ready")
+    let bridgeStatus = relinking ? "relinking" : (bridgeOK ? "healthy" : "unhealthy")
     let result: JSONValue = [
       "daemon": "running",
       "bridge": .string(bridgeStatus),
