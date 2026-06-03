@@ -33,10 +33,11 @@ actor MCPClient {
   /// Re-run MCP handshake over the existing bridge process — no new process, no new Xcode connection.
   func relink() async throws {
     guard !isRelinking, !isInitialized else { return }
+    isRelinking = true
     guard await bridge.isRunning else {
+      isRelinking = false
       throw XbridgeError.bridgeNotRunning
     }
-    isRelinking = true
     defer { isRelinking = false }
     isInitialized = false
     knownTools = []
