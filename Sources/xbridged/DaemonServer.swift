@@ -90,8 +90,8 @@ actor DaemonServer {
       return await handleStatus(id: request.id)
     case LocalRPCMethod.stop:
       return await handleStop(id: request.id)
-    case LocalRPCMethod.reinitialize:
-      return await handleReinitialize(id: request.id)
+    case LocalRPCMethod.relink:
+      return await handleRelink(id: request.id)
     case LocalRPCMethod.tools:
       return await handleTools(id: request.id)
     case LocalRPCMethod.toolSchema:
@@ -106,11 +106,13 @@ actor DaemonServer {
   // MARK: - Handlers
 
   private func handleStatus(id: String) async -> LocalRPCResponse {
+    let relinking = await mcpClient.isRelinking
     let bridgeOK = await mcpClient.isInitialized
     let toolCount = await mcpClient.knownTools.count
+    let bridgeStatus = relinking ? "relinking" : (bridgeOK ? "healthy" : "not ready")
     let result: JSONValue = [
       "daemon": "running",
-      "bridge": .string(bridgeOK ? "healthy" : "not ready"),
+      "bridge": .string(bridgeStatus),
       "tools": .int(toolCount)
     ]
     return .success(id: id, result: result)
@@ -125,10 +127,10 @@ actor DaemonServer {
     return .success(id: id, result: ["message": "stopping"])
   }
 
-  private func handleReinitialize(id: String) async -> LocalRPCResponse {
+  private func handleRelink(id: String) async -> LocalRPCResponse {
     do {
-      try await mcpClient.reinitialize()
-      return .success(id: id, result: ["message": "reinitialized"])
+      try await mcpClient.relink()
+      return .success(id: id, result: ["message": "Relinked. If Xcode showed a permission prompt, ask the user to click Allow before continuing."])
     } catch {
       return .failure(id: id, message: error.localizedDescription)
     }

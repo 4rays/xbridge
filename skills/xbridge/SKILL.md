@@ -21,11 +21,13 @@ This skill enables AI agents to interact with Xcode projects via the **xbridge C
 > ls /Applications/Xcode*.app
 > ```
 >
-> If the bridge shows as unhealthy, re-initialize it:
+> If the bridge shows as unhealthy, relink it:
 >
 > ```bash
-> xbridge reinitialize
+> xbridge relink
 > ```
+>
+> Then ask the user to click **Allow** in the Xcode permission dialog if one appeared.
 
 ## Setup
 
@@ -55,13 +57,13 @@ If the output indicates the bridge is not running, tell the user:
 > xbridge status
 > ```
 >
-> If the bridge shows as unhealthy after Xcode is open, re-initialize the MCP session:
+> If the bridge shows as unhealthy after Xcode is open, relink the MCP session:
 >
 > ```bash
-> xbridge reinitialize
+> xbridge relink
 > ```
 >
-> If this is your first time connecting, Xcode may show a permission dialog — click **Allow** to proceed.
+> After relinking, **ask the user to click Allow** in the Xcode permission dialog if one appeared, then wait for confirmation before continuing.
 
 Wait for the user to confirm before continuing.
 
@@ -121,7 +123,7 @@ Commands most likely to need a timeout: `build`, `test`, `test-run`, `build-log`
 | Command                  | Description                                        |
 | ------------------------ | -------------------------------------------------- |
 | `xbridge status`         | Show daemon and bridge status                      |
-| `xbridge reinitialize`   | Re-run MCP handshake without restarting the bridge |
+| `xbridge relink`         | Re-run MCP handshake without restarting the bridge |
 
 ### Discovery
 
@@ -236,7 +238,7 @@ xbridge docs "SwiftUI List" SwiftUI
 Install with `brew tap 4rays/tap && brew install xbridge`.
 
 **`xbridge status` shows daemon not running**
-Ensure Xcode is open with a project. The daemon auto-starts on the next command. If the bridge shows unhealthy after Xcode is running, run `xbridge reinitialize`.
+Ensure Xcode is open with a project. The daemon auto-starts on the next command. If the bridge shows unhealthy after Xcode is running, run `xbridge relink`.
 
 **No tab IDs from `xbridge list-windows`**
 Xcode must be running with a project open. Run `open MyApp.xcodeproj` first.
@@ -245,7 +247,7 @@ Xcode must be running with a project open. Run `open MyApp.xcodeproj` first.
 Go to **Xcode > Settings > Intelligence > Model Context Protocol** and enable Xcode Tools.
 
 **MCP permission denied (bridge fallback)**
-In Xcode Settings, revoke the process entry under MCP, reconnect to trigger the dialog, then click **Allow**.
+In Xcode Settings, revoke the process entry under MCP, run `xbridge relink` to trigger the dialog, then ask the user to click **Allow**.
 
 ## Project Context
 
