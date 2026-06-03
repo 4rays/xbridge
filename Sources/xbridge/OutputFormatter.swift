@@ -43,13 +43,17 @@ struct OutputFormatter {
       tools  : \(tools)
       xcode  : \(xcode)
       """
-    switch effectiveBridge {
-    case "unhealthy":
-      lines += "\n\n→ run: xbridge relink"
-    case "relinking":
-      lines += "\n\n→ waiting for Xcode permission — click Allow if prompted"
-    default:
-      break
+    if !xcodeRunning {
+      lines += "\n\n→ open Xcode first: open -a Xcode"
+    } else {
+      switch effectiveBridge {
+      case "unhealthy":
+        lines += "\n\n→ run: xbridge relink"
+      case "relinking":
+        lines += "\n\n→ waiting for Xcode permission — click Allow if prompted"
+      default:
+        break
+      }
     }
     return lines
   }
