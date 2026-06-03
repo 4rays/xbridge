@@ -37,12 +37,21 @@ struct OutputFormatter {
       .contains { $0.bundleIdentifier == "com.apple.dt.Xcode" }
     let xcode = xcodeRunning ? "open" : "closed"
     let effectiveBridge = xcodeRunning ? bridge : "unhealthy"
-    return """
+    var lines = """
       daemon : \(daemon)
       bridge : \(effectiveBridge)
       tools  : \(tools)
       xcode  : \(xcode)
       """
+    switch effectiveBridge {
+    case "unhealthy":
+      lines += "\n\n→ run: xbridge relink"
+    case "relinking":
+      lines += "\n\n→ waiting for Xcode permission — click Allow if prompted"
+    default:
+      break
+    }
+    return lines
   }
 
   /// Extracts text content from an MCP tool call result.
