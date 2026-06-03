@@ -30,9 +30,6 @@ actor DaemonServer {
 
     await stateStore.writePID(Int32(ProcessInfo.processInfo.processIdentifier))
 
-    logger.info("Starting MCP client...")
-    await mcpClient.start()
-
     let server = SocketServer(logger: logger) { [weak self] fd in
       guard let self else { return }
       await self.handleConnection(fd: fd)
@@ -41,6 +38,10 @@ actor DaemonServer {
     try await server.start(socketPath: XbridgePaths.socketPath.path)
 
     logger.info("xbridged ready")
+
+    // Start bridge in background — socket is already accepting connections.
+    // linkState starts as .down; ensureReady() in callTool handles on-demand init.
+    Task { await self.mcpClient.start() }
 
     // Block until the process receives a signal (SIGTERM/SIGINT handled in main.swift).
     try await Task.sleep(nanoseconds: .max)

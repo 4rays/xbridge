@@ -56,7 +56,7 @@ struct OutputFormatter {
       case "awaiting-permission":
         lines += "\n\n→ click Allow in the Xcode permission dialog"
       case "linking":
-        lines += "\n\n→ bridge is starting..."
+        lines += "\n\n→ bridge is starting, run status again in a moment"
       default:
         break
       }

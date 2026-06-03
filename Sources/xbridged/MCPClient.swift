@@ -57,11 +57,6 @@ actor MCPClient {
       if response.error != nil { return .down }
       return .ready
     } catch {
-      let cause = await bridge.lastTerminationCause
-      if cause == .duringToolCall {
-        linkState = .awaitingGrant
-        return .awaitingGrant
-      }
       linkState = .down
       return .down
     }
