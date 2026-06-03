@@ -130,7 +130,7 @@ actor DaemonServer {
   private func handleRelink(id: String) async -> LocalRPCResponse {
     do {
       try await mcpClient.relink()
-      return .success(id: id, result: ["message": "relinked"])
+      return .success(id: id, result: ["message": "Relinked. If Xcode showed a permission prompt, ask the user to click Allow before continuing."])
     } catch {
       return .failure(id: id, message: error.localizedDescription)
     }

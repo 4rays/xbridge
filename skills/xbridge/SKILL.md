@@ -21,11 +21,13 @@ This skill enables AI agents to interact with Xcode projects via the **xbridge C
 > ls /Applications/Xcode*.app
 > ```
 >
-> If the bridge shows as unhealthy, re-initialize it:
+> If the bridge shows as unhealthy, relink it:
 >
 > ```bash
 > xbridge relink
 > ```
+>
+> Then ask the user to click **Allow** in the Xcode permission dialog if one appeared.
 
 ## Setup
 
@@ -61,7 +63,7 @@ If the output indicates the bridge is not running, tell the user:
 > xbridge relink
 > ```
 >
-> If this is your first time connecting, Xcode may show a permission dialog — click **Allow** to proceed.
+> After relinking, **ask the user to click Allow** in the Xcode permission dialog if one appeared, then wait for confirmation before continuing.
 
 Wait for the user to confirm before continuing.
 
