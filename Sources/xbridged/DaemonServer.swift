@@ -31,7 +31,7 @@ actor DaemonServer {
     await stateStore.writePID(Int32(ProcessInfo.processInfo.processIdentifier))
 
     logger.info("Starting MCP client...")
-    try await mcpClient.start()
+    await mcpClient.start()
 
     let server = SocketServer(logger: logger) { [weak self] fd in
       guard let self else { return }
@@ -106,10 +106,15 @@ actor DaemonServer {
   // MARK: - Handlers
 
   private func handleStatus(id: String) async -> LocalRPCResponse {
-    let relinking = await mcpClient.isRelinking
-    let bridgeOK = relinking ? false : await mcpClient.ping()
+    let state = await mcpClient.probe()
     let toolCount = await mcpClient.knownTools.count
-    let bridgeStatus = relinking ? "relinking" : (bridgeOK ? "healthy" : "unhealthy")
+    let bridgeStatus: String
+    switch state {
+    case .ready: bridgeStatus = "healthy"
+    case .awaitingGrant: bridgeStatus = "awaiting-permission"
+    case .linking: bridgeStatus = "linking"
+    case .down: bridgeStatus = "down"
+    }
     let result: JSONValue = [
       "daemon": "running",
       "bridge": .string(bridgeStatus),
@@ -131,6 +136,8 @@ actor DaemonServer {
     do {
       try await mcpClient.relink()
       return .success(id: id, result: ["message": "Relinked. If Xcode showed a permission prompt, ask the user to click Allow before continuing."])
+    } catch XbridgeError.xcodeUnavailable {
+      return .failure(id: id, code: "XCODE_UNAVAILABLE", message: XbridgeError.xcodeUnavailable.localizedDescription)
     } catch {
       return .failure(id: id, message: error.localizedDescription)
     }
@@ -170,6 +177,12 @@ actor DaemonServer {
     do {
       let result = try await mcpClient.callTool(name: params.tool, arguments: params.arguments)
       return .success(id: request.id, result: result)
+    } catch XbridgeError.awaitingPermission {
+      return .failure(id: request.id, code: "WAITING_FOR_PERMISSION",
+        message: "Xcode is waiting for permission. Click Allow in the Xcode dialog, then re-run the command.")
+    } catch XbridgeError.xcodeUnavailable {
+      return .failure(id: request.id, code: "XCODE_UNAVAILABLE",
+        message: "Xcode isn't reachable. Make sure Xcode is open with a project and MCP is enabled.")
     } catch {
       return .failure(id: request.id, message: error.localizedDescription)
     }

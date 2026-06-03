@@ -46,12 +46,14 @@ enum Commands {
     all.first { $0.name == name }
   }
 
+  static let hidden: Set<String> = ["relink"]
+
   static func printHelp() {
     print("Usage: xbridge <command> [args]")
     print("")
     print("Commands:")
     print("  version                    Show version")
-    for cmd in all {
+    for cmd in all where !hidden.contains(cmd.name) {
       print("  \(cmd.usage)")
     }
   }

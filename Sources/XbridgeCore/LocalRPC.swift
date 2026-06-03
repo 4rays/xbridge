@@ -31,12 +31,18 @@ public struct LocalRPCResponse: Codable, Sendable {
   public static func failure(id: String, message: String) -> LocalRPCResponse {
     LocalRPCResponse(id: id, ok: false, result: nil, error: LocalRPCError(message: message))
   }
+
+  public static func failure(id: String, code: String, message: String) -> LocalRPCResponse {
+    LocalRPCResponse(id: id, ok: false, result: nil, error: LocalRPCError(code: code, message: message))
+  }
 }
 
 public struct LocalRPCError: Codable, Sendable {
+  public let code: String?
   public let message: String
 
-  public init(message: String) {
+  public init(code: String? = nil, message: String) {
+    self.code = code
     self.message = message
   }
 }

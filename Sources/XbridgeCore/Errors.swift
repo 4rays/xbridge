@@ -11,6 +11,8 @@ public enum XbridgeError: Error, Sendable {
   case invalidResponse(String)
   case socketError(String)
   case writeFailed
+  case awaitingPermission
+  case xcodeUnavailable
 }
 
 extension XbridgeError: LocalizedError {
@@ -36,6 +38,10 @@ extension XbridgeError: LocalizedError {
       return "Socket error: \(msg)"
     case .writeFailed:
       return "Failed to write to bridge"
+    case .awaitingPermission:
+      return "Xcode is waiting for permission. Click Allow in the Xcode dialog, then re-run the command."
+    case .xcodeUnavailable:
+      return "Xcode isn't reachable. Make sure Xcode is open with a project and MCP is enabled."
     }
   }
 }

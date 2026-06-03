@@ -11,10 +11,25 @@ actor BridgeProcess {
     case failed(String)
   }
 
+  enum TerminationCause: Sendable, CustomStringConvertible {
+    case duringToolCall
+    case duringHandshake
+    case idle
+    var description: String {
+      switch self {
+      case .duringToolCall: return "duringToolCall"
+      case .duringHandshake: return "duringHandshake"
+      case .idle: return "idle"
+      }
+    }
+  }
+
   private(set) var state: State = .stopped
+  private(set) var lastTerminationCause: TerminationCause = .idle
   private var stdinFD: Int32 = -1
   private var nextRequestID = 1
   private var pendingResponses: [Int: CheckedContinuation<MCPResponse, Error>] = [:]
+  private var pendingMethods: [Int: String] = [:]
   private var terminationWaiters: [CheckedContinuation<Void, Never>] = []
   private var readTask: Task<Void, Never>?
   private let logger: Logger
@@ -134,6 +149,7 @@ actor BridgeProcess {
         continuation.resume(throwing: XbridgeError.writeFailed)
       } else {
         pendingResponses[request.id] = continuation
+        pendingMethods[request.id] = request.method
       }
     }
   }
@@ -156,6 +172,7 @@ actor BridgeProcess {
 
   private func deliverResponse(_ response: MCPResponse) {
     guard let id = response.id else { return }
+    pendingMethods.removeValue(forKey: id)
     if let cont = pendingResponses.removeValue(forKey: id) {
       cont.resume(returning: response)
     } else {
@@ -174,7 +191,11 @@ actor BridgeProcess {
 
   private func handleTermination() {
     guard case .running = state else { return }
-    logger.warning("Bridge process terminated")
+    // Compute cause before failing pending so callers can read it immediately after resuming.
+    let methods = Set(pendingMethods.values)
+    lastTerminationCause = methods.contains("tools/call") ? .duringToolCall
+      : (!methods.isEmpty ? .duringHandshake : .idle)
+    logger.warning("Bridge process terminated (cause: \(lastTerminationCause))")
     state = .stopped
     handles = nil
     stdinFD = -1
@@ -190,6 +211,7 @@ actor BridgeProcess {
       cont.resume(throwing: error)
     }
     pendingResponses.removeAll()
+    pendingMethods.removeAll()
   }
 
   // MARK: - I/O readers

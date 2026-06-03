@@ -8,7 +8,11 @@ struct OutputFormatter {
 
   static func format(response: LocalRPCResponse, method: String) -> String {
     if !response.ok {
-      let msg = response.error?.message ?? "Unknown error"
+      let err = response.error
+      let msg = err?.message ?? "Unknown error"
+      if let code = err?.code {
+        return "\(code): \(msg)"
+      }
       return "error: \(msg)"
     }
     guard let result = response.result else {
@@ -47,10 +51,12 @@ struct OutputFormatter {
       lines += "\n\n→ open Xcode first: open -a Xcode"
     } else {
       switch effectiveBridge {
-      case "unhealthy":
-        lines += "\n\n→ run: xbridge relink"
-      case "relinking":
-        lines += "\n\n→ waiting for Xcode permission — click Allow if prompted"
+      case "unhealthy", "down":
+        lines += "\n\n→ open Xcode with a project and ensure MCP is enabled"
+      case "awaiting-permission":
+        lines += "\n\n→ click Allow in the Xcode permission dialog"
+      case "linking":
+        lines += "\n\n→ bridge is starting..."
       default:
         break
       }
