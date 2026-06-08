@@ -2,7 +2,17 @@ import Darwin
 import Foundation
 import XbridgeCore
 
-let args = Array(CommandLine.arguments.dropFirst())
+var rawArgs = Array(CommandLine.arguments.dropFirst())
+
+// Extract --xcode-path <path> global option before command dispatch
+var xcodePath: String? = nil
+if let idx = rawArgs.firstIndex(of: "--xcode-path"), rawArgs.index(after: idx) < rawArgs.endIndex {
+  xcodePath = rawArgs[rawArgs.index(after: idx)]
+  rawArgs.remove(at: rawArgs.index(after: idx))
+  rawArgs.remove(at: idx)
+}
+
+let args = rawArgs
 
 guard !args.isEmpty else {
   Commands.printHelp()
@@ -38,7 +48,7 @@ guard commandArgs.count >= command.minArgs else {
 
 do {
   let request = try command.build(commandArgs)
-  let client = DaemonClient()
+  let client = DaemonClient(xcodePath: xcodePath)
 
   if request.method == LocalRPCMethod.stop {
     guard Darwin.isatty(STDIN_FILENO) == 1 || commandArgs.contains("--force") else {

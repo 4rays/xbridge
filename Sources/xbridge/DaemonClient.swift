@@ -5,9 +5,11 @@ import XbridgeCore
 /// Connects to the xbridged daemon and sends a single request, returning the response.
 struct DaemonClient {
   private let socketPath: String
+  private let xcodePath: String?
 
-  init(socketPath: String = XbridgePaths.socketPath.path) {
+  init(socketPath: String = XbridgePaths.socketPath.path, xcodePath: String? = nil) {
     self.socketPath = socketPath
+    self.xcodePath = xcodePath
   }
 
   // MARK: - Send
@@ -46,7 +48,7 @@ struct DaemonClient {
     }
 
     // Spawn daemon and retry
-    try spawnDaemon()
+    try spawnDaemon(xcodePath: xcodePath)
 
     for delay in [0.2, 0.4, 0.8, 1.6] {
       Thread.sleep(forTimeInterval: delay)
@@ -83,7 +85,7 @@ struct DaemonClient {
     return fd
   }
 
-  private func spawnDaemon() throws {
+  private func spawnDaemon(xcodePath: String? = nil) throws {
     _ = DaemonProcessCleanup.cleanupExistingDaemons { message in
       fputs("\(message)\n", stderr)
     }
@@ -99,6 +101,9 @@ struct DaemonClient {
 
     let process = Process()
     process.executableURL = daemonURL
+    if let xcodePath {
+      process.arguments = ["--xcode-path", xcodePath]
+    }
     process.standardInput = FileHandle(forReadingAtPath: "/dev/null")
     process.standardOutput = FileHandle(forWritingAtPath: "/dev/null")
     process.standardError = FileHandle(forWritingAtPath: "/dev/null")

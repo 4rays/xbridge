@@ -11,9 +11,9 @@ actor DaemonServer {
   private let logger: Logger
   private var socketServer: SocketServer?
 
-  init(logger: Logger) {
+  init(logger: Logger, developerDir: String? = nil) {
     self.logger = logger
-    let bridge = BridgeProcess(logger: logger)
+    let bridge = BridgeProcess(logger: logger, developerDir: developerDir)
     self.mcpClient = MCPClient(bridge: bridge, logger: logger)
     self.stateStore = StateStore(logger: logger)
   }

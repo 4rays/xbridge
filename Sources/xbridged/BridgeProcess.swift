@@ -33,12 +33,14 @@ actor BridgeProcess {
   private var terminationWaiters: [CheckedContinuation<Void, Never>] = []
   private var readTask: Task<Void, Never>?
   private let logger: Logger
+  private let developerDir: String?
 
   // Keep process and pipes alive via @unchecked Sendable container
   private nonisolated(unsafe) var handles: BridgeHandles?
 
-  init(logger: Logger) {
+  init(logger: Logger, developerDir: String? = nil) {
     self.logger = logger
+    self.developerDir = developerDir
   }
 
   var isRunning: Bool {
@@ -62,6 +64,13 @@ actor BridgeProcess {
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
     process.arguments = ["mcpbridge"]
+
+    if let developerDir {
+      var env = ProcessInfo.processInfo.environment
+      env["DEVELOPER_DIR"] = developerDir
+      process.environment = env
+      logger.info("Using DEVELOPER_DIR: \(developerDir)")
+    }
 
     let stdinPipe = Pipe()
     let stdoutPipe = Pipe()
