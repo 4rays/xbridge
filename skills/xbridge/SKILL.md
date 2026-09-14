@@ -272,9 +272,15 @@ tell application "System Events"
     repeat with w in windows
       if (subrole of w is "AXDialog") then
         try
-          if exists button "Allow" of w then
-            click button "Allow" of w
-            return "clicked Allow"
+          set dialogText to ""
+          repeat with t in static texts of w
+            set dialogText to dialogText & (value of t as text) & " "
+          end repeat
+          if dialogText contains "xbridge" and dialogText contains "access Xcode" then
+            if exists button "Allow" of w then
+              click button "Allow" of w
+              return "clicked Allow"
+            end if
           end if
         end try
       end if
@@ -284,7 +290,7 @@ end tell
 return "no Allow dialog"
 ```
 
-Confirm with `xbridge status` (`bridge : healthy`). If the dialog is still up, `window 1` is usually the dialog and `click button "Allow" of window 1` is enough.
+Confirm with `xbridge status` (`bridge : healthy`). Retry the same script if the dialog is still up — do not click `Allow` on `window 1` without checking the static text.
 
 **Do not** walk `entire contents` of the Xcode process — it hangs. Query `windows` / `buttons` / `static texts` only.
 

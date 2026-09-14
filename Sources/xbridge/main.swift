@@ -2,17 +2,9 @@ import Darwin
 import Foundation
 import XbridgeCore
 
-var rawArgs = Array(CommandLine.arguments.dropFirst())
-
-// Extract --xcode-path <path> global option before command dispatch
-var xcodePath: String? = nil
-if let idx = rawArgs.firstIndex(of: "--xcode-path"), rawArgs.index(after: idx) < rawArgs.endIndex {
-  xcodePath = rawArgs[rawArgs.index(after: idx)]
-  rawArgs.remove(at: rawArgs.index(after: idx))
-  rawArgs.remove(at: idx)
-}
-
-let args = rawArgs
+let extracted = GlobalCLIOptions.extractXcodePath(from: Array(CommandLine.arguments.dropFirst()))
+let xcodePath = extracted.path
+let args = extracted.remaining
 
 guard !args.isEmpty else {
   Commands.printHelp()
