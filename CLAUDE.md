@@ -30,6 +30,12 @@
 - Bridge response format: `{"structuredContent":{"message":"..."},"content":[...]}`
 - `structuredContent.message` is plain text; `content[0].text` is JSON-encoded
 
+## Subcommand Policy
+
+xbridge has first-class subcommands only for tools available across all supported Xcode versions. Tools introduced in a specific Xcode version (e.g. Xcode 27+) are intentionally not given dedicated subcommands — use `xbridge call <ToolName> [json]` instead. This avoids subcommands that silently fail on older Xcode installations and eliminates annual churn when Apple adds tools.
+
+To check what tools the connected Xcode actually exposes: `xbridge tools`
+
 ## Swift Concurrency (Swift 6)
 
 - All global state must be `Sendable`; `Command` closures need `@Sendable`
