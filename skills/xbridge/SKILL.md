@@ -288,4 +288,4 @@ Confirm with `xbridge status` (`bridge : healthy`). If the dialog is still up, `
 
 **Do not** walk `entire contents` of the Xcode process — it hangs. Query `windows` / `buttons` / `static texts` only.
 
-If AppleScript cannot see the dialog, the host lacks Accessibility (`System Settings → Privacy & Security → Accessibility`). Then ask a human to click **Allow**.
+If AppleScript cannot see or click the dialog, the **hosting process** lacks Accessibility — Terminal, Ghostty, iTerm, the agent app, or whatever launched `osascript`. Ask the developer to enable it in **System Settings → Privacy & Security → Accessibility** for that app, then retry the click. Until that is granted, a human has to click **Allow** in Xcode.
