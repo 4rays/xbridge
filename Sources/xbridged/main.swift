@@ -30,9 +30,26 @@ if let fh = FileHandle(forWritingAtPath: logFileURL.path) {
 let logger = Logger(label: "xbridged", fileHandle: logFile)
 logger.info("xbridged starting (PID \(ProcessInfo.processInfo.processIdentifier))")
 
+// MARK: - Args
+
+func parseDeveloperDir() -> String? {
+  let args = Array(CommandLine.arguments.dropFirst())
+  if let idx = args.firstIndex(of: "--xcode-path"), args.index(after: idx) < args.endIndex {
+    let raw = args[args.index(after: idx)]
+    // Accept either .app path or a full Contents/Developer path
+    if raw.hasSuffix(".app") {
+      return raw + "/Contents/Developer"
+    }
+    return raw
+  }
+  return nil
+}
+
+let developerDir = parseDeveloperDir()
+
 // MARK: - Run
 
-let daemon = DaemonServer(logger: logger)
+let daemon = DaemonServer(logger: logger, developerDir: developerDir)
 
 // MARK: - Signal handling
 

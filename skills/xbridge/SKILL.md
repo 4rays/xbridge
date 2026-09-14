@@ -51,9 +51,7 @@ If the output indicates the bridge is not running, tell the user:
 > xbridge status
 > ```
 >
-> If the bridge shows as `awaiting-permission`, tell the user: "Xcode is asking for permission — click **Allow** in the dialog." Wait for confirmation before continuing.
-
-Wait for the user to confirm before continuing.
+> If the bridge shows as `awaiting-permission` or a command hangs on first contact, Xcode is showing **Allow “xbridge” to access Xcode?**. Click **Allow** via Accessibility — see [Remote Allow](#remote-allow-accessibility). Do not wait for a human unless that click fails.
 
 If found and bridge is running, skip to [Using xbridge](#using-xbridge).
 
@@ -228,7 +226,7 @@ Install with `brew tap 4rays/tap && brew install xbridge`.
 Ensure Xcode is open with a project and MCP is enabled in **Xcode > Settings > Intelligence > Model Context Protocol**. The daemon auto-starts and retries on the next command.
 
 **Command returns `WAITING_FOR_PERMISSION`**
-Tell the user: "Xcode is asking for permission — click **Allow** in the dialog." Wait for confirmation, then re-run the same command. The daemon will retry automatically once permission is granted.
+Xcode is showing **Allow “xbridge” to access Xcode?**. Click **Allow** via Accessibility — see [Remote Allow](#remote-allow-accessibility) — then re-run the same command. The daemon retries automatically once permission is granted.
 
 **No tab IDs from `xbridge list-windows`**
 Xcode must be running with a project open. Run `open MyApp.xcodeproj` first.
@@ -237,7 +235,7 @@ Xcode must be running with a project open. Run `open MyApp.xcodeproj` first.
 Go to **Xcode > Settings > Intelligence > Model Context Protocol** and enable Xcode Tools.
 
 **MCP permission denied**
-In Xcode Settings, revoke the process entry under MCP. The next tool command will trigger a fresh permission dialog — tell the user to click **Allow**.
+In Xcode Settings, revoke the process entry under MCP. The next tool command will trigger a fresh permission dialog — click **Allow** via [Remote Allow](#remote-allow-accessibility).
 
 ## Project Context
 
@@ -261,6 +259,39 @@ Add an `AGENTS.md` or `CLAUDE.md` in your project root:
 - Tests in: Tests/
 ```
 
-## Resources
+## Remote Allow (Accessibility)
 
-- [Apple MCP Documentation](https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode)
+Xcode prompts **Allow “xbridge” to access Xcode?** on first `xbridged` contact each daemon session (path + PID). It is an Xcode `AXDialog`, not a system TCC sheet. xbridge will not click it for you.
+
+If the host (Ghostty, Terminal, the agent app) has Accessibility enabled, click **Allow** instead of waiting for a human:
+
+```applescript
+tell application "System Events"
+  tell process "Xcode"
+    set frontmost to true
+    repeat with w in windows
+      if (subrole of w is "AXDialog") then
+        try
+          set dialogText to ""
+          repeat with t in static texts of w
+            set dialogText to dialogText & (value of t as text) & " "
+          end repeat
+          if dialogText contains "xbridge" and dialogText contains "access Xcode" then
+            if exists button "Allow" of w then
+              click button "Allow" of w
+              return "clicked Allow"
+            end if
+          end if
+        end try
+      end if
+    end repeat
+  end tell
+end tell
+return "no Allow dialog"
+```
+
+Confirm with `xbridge status` (`bridge : healthy`). Retry the same script if the dialog is still up — do not click `Allow` on `window 1` without checking the static text.
+
+**Do not** walk `entire contents` of the Xcode process — it hangs. Query `windows` / `buttons` / `static texts` only.
+
+If AppleScript cannot see or click the dialog, the **hosting process** lacks Accessibility — Terminal, Ghostty, iTerm, the agent app, or whatever launched `osascript`. Ask the developer to enable it in **System Settings → Privacy & Security → Accessibility** for that app, then retry the click. Until that is granted, a human has to click **Allow** in Xcode.
