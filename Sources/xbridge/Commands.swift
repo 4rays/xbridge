@@ -20,18 +20,32 @@ enum Commands {
     toolsCommand,
     toolSchemaCommand,
     callCommand,
+    listWorkspacesCommand,
     listWindowsCommand,
+    openWorkspaceCommand,
+    closeWorkspaceCommand,
+    listSchemesCommand,
+    switchSchemeCommand,
+    listDestinationsCommand,
+    switchDestinationCommand,
+    listTargetsCommand,
+    listTestPlansCommand,
+    switchTestPlanCommand,
     buildCommand,
+    runCommand,
+    stopRunCommand,
     testCommand,
     testListCommand,
+    runTestsCommand,
     readCommand,
     grepCommand,
     issuesCommand,
     refreshIssuesCommand,
     buildLogCommand,
+    consoleCommand,
+    debugCommand,
     lsCommand,
     globCommand,
-    runTestsCommand,
     mkdirCommand,
     rmCommand,
     mvCommand,
@@ -39,6 +53,7 @@ enum Commands {
     updateCommand,
     execCommand,
     previewCommand,
+    buildSettingsCommand,
     docsCommand
   ]
 
@@ -46,10 +61,12 @@ enum Commands {
     all.first { $0.name == name }
   }
 
-  static let hidden: Set<String> = ["relink"]
+  static let hidden: Set<String> = ["relink", "list-windows"]
 
   static func printHelp() {
-    print("Usage: xbridge <command> [args]")
+    print("Usage: xbridge [--workspace <id>] <command> [args]")
+    print("")
+    print("  --workspace <id>           Target a workspace when several are open")
     print("")
     print("Commands:")
     print("  version                    Show version")
@@ -122,245 +139,345 @@ enum Commands {
     return callToolRequest(tool: tool, arguments: arguments)
   }
 
-  // MARK: - Xcode tool commands
+  // MARK: - Workspace / scheme / destination
 
-  static let listWindowsCommand = Command(
-    name: "list-windows",
-    usage: "list-windows              List open Xcode windows and tabs",
+  static let listWorkspacesCommand = Command(
+    name: "list-workspaces",
+    usage: "list-workspaces           List open Xcode workspaces",
     minArgs: 0
   ) { _ in
-    callToolRequest(tool: XcodeTool.listWindows, arguments: [:])
+    callToolRequest(tool: XcodeTool.listWorkspaces, arguments: [:])
   }
 
-  static let buildCommand = Command(
-    name: "build",
-    usage: "build <tab-id>            Build the project in the specified tab",
+  /// Hidden alias for list-workspaces (pre-Xcode 27 command name).
+  static let listWindowsCommand = Command(
+    name: "list-windows",
+    usage: "list-windows              Alias for list-workspaces",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.listWorkspaces, arguments: [:])
+  }
+
+  static let openWorkspaceCommand = Command(
+    name: "open-workspace",
+    usage: "open-workspace <path>     Open a .xcworkspace or .xcodeproj",
+    minArgs: 1
+  ) { args in
+    callToolRequest(tool: XcodeTool.openWorkspace, arguments: ["path": .string(args[0])])
+  }
+
+  static let closeWorkspaceCommand = Command(
+    name: "close-workspace",
+    usage: "close-workspace <id>      Close a workspace by identifier",
     minArgs: 1
   ) { args in
     callToolRequest(
-      tool: XcodeTool.buildProject,
-      arguments: ["tabIdentifier": .string(args[0])]
+      tool: XcodeTool.closeWorkspace,
+      arguments: ["workspaceIdentifier": .string(args[0])]
     )
+  }
+
+  static let listSchemesCommand = Command(
+    name: "list-schemes",
+    usage: "list-schemes              List schemes in the current workspace",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.listSchemes, arguments: [:])
+  }
+
+  static let switchSchemeCommand = Command(
+    name: "switch-scheme",
+    usage: "switch-scheme <name>      Make a scheme active",
+    minArgs: 1
+  ) { args in
+    callToolRequest(tool: XcodeTool.switchScheme, arguments: ["schemeName": .string(args[0])])
+  }
+
+  static let listDestinationsCommand = Command(
+    name: "list-destinations",
+    usage: "list-destinations         List run destinations for the active scheme",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.listRunDestinations, arguments: [:])
+  }
+
+  static let switchDestinationCommand = Command(
+    name: "switch-destination",
+    usage: "switch-destination <title>  Make a run destination active",
+    minArgs: 1
+  ) { args in
+    callToolRequest(
+      tool: XcodeTool.switchRunDestination,
+      arguments: ["displayTitle": .string(args[0])]
+    )
+  }
+
+  static let listTargetsCommand = Command(
+    name: "list-targets",
+    usage: "list-targets              List targets in the current workspace",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.listTargets, arguments: [:])
+  }
+
+  static let listTestPlansCommand = Command(
+    name: "list-test-plans",
+    usage: "list-test-plans           List test plans for the active scheme",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.listTestPlans, arguments: [:])
+  }
+
+  static let switchTestPlanCommand = Command(
+    name: "switch-test-plan",
+    usage: "switch-test-plan <name>   Make a test plan active",
+    minArgs: 1
+  ) { args in
+    callToolRequest(tool: XcodeTool.switchTestPlan, arguments: ["testPlanName": .string(args[0])])
+  }
+
+  // MARK: - Build / run / test
+
+  static let buildCommand = Command(
+    name: "build",
+    usage: "build                     Build the current scheme",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.buildProject, arguments: [:])
+  }
+
+  static let runCommand = Command(
+    name: "run",
+    usage: "run                       Build and run the current scheme",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.runProject, arguments: [:])
+  }
+
+  static let stopRunCommand = Command(
+    name: "stop-run",
+    usage: "stop-run                  Stop the running app",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.stopProject, arguments: [:])
   }
 
   static let testCommand = Command(
     name: "test",
-    usage: "test <tab-id>             Run tests in the specified tab",
-    minArgs: 1
-  ) { args in
-    callToolRequest(
-      tool: XcodeTool.runAllTests,
-      arguments: ["tabIdentifier": .string(args[0])]
-    )
+    usage: "test                      Run all tests in the active test plan",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.runAllTests, arguments: [:])
   }
 
   static let testListCommand = Command(
     name: "test-list",
-    usage: "test-list <tab-id>        List available tests in the specified tab",
+    usage: "test-list                 List available tests in the active test plan",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.listTests, arguments: [:])
+  }
+
+  static let runTestsCommand = Command(
+    name: "test-run",
+    usage: "test-run <target> <identifier>  Run a specific test",
+    minArgs: 2
+  ) { args in
+    let tests: JSONValue = .array([
+      .object(["targetName": .string(args[0]), "testIdentifier": .string(args[1])])
+    ])
+    return callToolRequest(tool: XcodeTool.runSomeTests, arguments: ["tests": tests])
+  }
+
+  static let issuesCommand = Command(
+    name: "issues",
+    usage: "issues [severity]         Show build issues (severity: error|warning|remark, default: error)",
+    minArgs: 0
+  ) { args in
+    var dict: [String: JSONValue] = [:]
+    if args.count > 0 {
+      dict["severity"] = .string(args[0])
+    }
+    return callToolRequest(tool: XcodeTool.getBuildLog, arguments: .object(dict))
+  }
+
+  static let buildLogCommand = Command(
+    name: "build-log",
+    usage: "build-log                 Show the current or latest build log",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.getBuildLog, arguments: [:])
+  }
+
+  static let consoleCommand = Command(
+    name: "console",
+    usage: "console                   Show console output from the latest launch",
+    minArgs: 0
+  ) { _ in
+    callToolRequest(tool: XcodeTool.getConsoleOutput, arguments: [:])
+  }
+
+  static let debugCommand = Command(
+    name: "debug",
+    usage: "debug <command>           Send an lldb command to the active debug session",
     minArgs: 1
   ) { args in
     callToolRequest(
-      tool: XcodeTool.listTests,
-      arguments: ["tabIdentifier": .string(args[0])]
+      tool: XcodeTool.invokeDebuggerCommand,
+      arguments: ["command": .string(args[0])]
     )
   }
 
-  static let readCommand = Command(
-    name: "read",
-    usage: "read <file> <tab-id>      Read a file in the specified tab",
-    minArgs: 2
+  static let buildSettingsCommand = Command(
+    name: "build-settings",
+    usage: "build-settings <target>   Show build settings for a target",
+    minArgs: 1
   ) { args in
     callToolRequest(
-      tool: XcodeTool.readFile,
-      arguments: [
-        "path": .string(args[0]),
-        "tabIdentifier": .string(args[1])
-      ]
+      tool: XcodeTool.getTargetBuildSettings,
+      arguments: ["targetName": .string(args[0])]
     )
+  }
+
+  // MARK: - File operations
+
+  static let readCommand = Command(
+    name: "read",
+    usage: "read <file>               Read a file in the current workspace",
+    minArgs: 1
+  ) { args in
+    callToolRequest(tool: XcodeTool.readFile, arguments: ["filePath": .string(args[0])])
   }
 
   static let grepCommand = Command(
     name: "grep",
-    usage: "grep <pattern> <tab-id> [path]  Search in the specified tab",
-    minArgs: 2
+    usage: "grep <pattern> [path]     Search in the current workspace",
+    minArgs: 1
   ) { args in
-    var toolArgs: JSONValue = [
-      "pattern": .string(args[0]),
-      "tabIdentifier": .string(args[1])
-    ]
-    if args.count >= 3, var obj = toolArgs.objectValue {
-      obj["path"] = .string(args[2])
+    var toolArgs: JSONValue = ["pattern": .string(args[0])]
+    if args.count >= 2, var obj = toolArgs.objectValue {
+      obj["path"] = .string(args[1])
       toolArgs = .object(obj)
     }
     return callToolRequest(tool: XcodeTool.grepInProject, arguments: toolArgs)
   }
 
-  static let issuesCommand = Command(
-    name: "issues",
-    usage: "issues <tab-id> [severity]  Show build issues (severity: error|warning|remark, default: error)",
-    minArgs: 1
-  ) { args in
-    var dict: [String: JSONValue] = ["tabIdentifier": .string(args[0])]
-    if args.count > 1 {
-      dict["severity"] = .string(args[1])
-    }
-    return callToolRequest(tool: XcodeTool.listIssues, arguments: .object(dict))
-  }
-
-  static let buildLogCommand = Command(
-    name: "build-log",
-    usage: "build-log <tab-id>        Show the build log for the specified tab",
-    minArgs: 1
-  ) { args in
-    callToolRequest(
-      tool: XcodeTool.getBuildLog,
-      arguments: ["tabIdentifier": .string(args[0])]
-    )
-  }
-
   static let lsCommand = Command(
     name: "ls",
-    usage: "ls <tab-id> <path>        List files in the Xcode project at path",
-    minArgs: 2
+    usage: "ls <path>                 List files in the Xcode project at path",
+    minArgs: 1
   ) { args in
-    callToolRequest(
-      tool: XcodeTool.listFiles,
-      arguments: ["tabIdentifier": .string(args[0]), "path": .string(args[1])]
-    )
+    callToolRequest(tool: XcodeTool.listFiles, arguments: ["path": .string(args[0])])
   }
 
   static let globCommand = Command(
     name: "glob",
-    usage: "glob <tab-id> [pattern]   Find files matching a wildcard pattern",
-    minArgs: 1
+    usage: "glob [pattern]            Find files matching a wildcard pattern",
+    minArgs: 0
   ) { args in
-    var toolArgs: JSONValue = ["tabIdentifier": .string(args[0])]
-    if args.count >= 2, var obj = toolArgs.objectValue {
-      obj["pattern"] = .string(args[1])
+    var toolArgs: JSONValue = [:]
+    if args.count >= 1, var obj = toolArgs.objectValue {
+      obj["pattern"] = .string(args[0])
       toolArgs = .object(obj)
     }
     return callToolRequest(tool: XcodeTool.globFiles, arguments: toolArgs)
   }
 
-  static let runTestsCommand = Command(
-    name: "test-run",
-    usage: "test-run <tab-id> <target> <identifier>  Run a specific test",
-    minArgs: 3
-  ) { args in
-    let tests: JSONValue = .array([
-      .object(["targetName": .string(args[1]), "testIdentifier": .string(args[2])])
-    ])
-    return callToolRequest(
-      tool: XcodeTool.runSomeTests,
-      arguments: ["tabIdentifier": .string(args[0]), "tests": tests]
-    )
-  }
-
   static let mkdirCommand = Command(
     name: "mkdir",
-    usage: "mkdir <tab-id> <path>     Create a directory in the Xcode project",
-    minArgs: 2
+    usage: "mkdir <path>              Create a directory in the Xcode project",
+    minArgs: 1
   ) { args in
     callToolRequest(
       tool: XcodeTool.makeDir,
-      arguments: ["tabIdentifier": .string(args[0]), "directoryPath": .string(args[1])]
+      arguments: ["directoryPath": .string(args[0])]
     )
   }
 
   static let rmCommand = Command(
     name: "rm",
-    usage: "rm <tab-id> <path>        Remove a file or directory from the Xcode project",
-    minArgs: 2
+    usage: "rm <path>                 Remove a file or directory from the Xcode project",
+    minArgs: 1
   ) { args in
-    callToolRequest(
-      tool: XcodeTool.removeFile,
-      arguments: ["tabIdentifier": .string(args[0]), "path": .string(args[1])]
-    )
+    callToolRequest(tool: XcodeTool.removeFile, arguments: ["path": .string(args[0])])
   }
 
   static let mvCommand = Command(
     name: "mv",
-    usage: "mv <tab-id> <src> <dst>   Move or rename a file in the Xcode project",
-    minArgs: 3
+    usage: "mv <src> <dst>            Move or rename a file in the Xcode project",
+    minArgs: 2
   ) { args in
     callToolRequest(
       tool: XcodeTool.moveFile,
       arguments: [
-        "tabIdentifier": .string(args[0]),
-        "sourcePath": .string(args[1]),
-        "destinationPath": .string(args[2])
+        "sourcePath": .string(args[0]),
+        "destinationPath": .string(args[1])
       ]
     )
   }
 
   static let writeCommand = Command(
     name: "write",
-    usage: "write <tab-id> <path> <content>  Create or overwrite a file",
-    minArgs: 3
+    usage: "write <path> <content>    Create or overwrite a file",
+    minArgs: 2
   ) { args in
     callToolRequest(
       tool: XcodeTool.writeFile,
       arguments: [
-        "tabIdentifier": .string(args[0]),
-        "filePath": .string(args[1]),
-        "content": .string(args[2])
+        "filePath": .string(args[0]),
+        "content": .string(args[1])
       ]
     )
   }
 
   static let updateCommand = Command(
     name: "update",
-    usage: "update <tab-id> <path> <old> <new>  Replace text in a file",
-    minArgs: 4
+    usage: "update <path> <old> <new> Replace text in a file",
+    minArgs: 3
   ) { args in
     callToolRequest(
       tool: XcodeTool.updateFile,
       arguments: [
-        "tabIdentifier": .string(args[0]),
-        "filePath": .string(args[1]),
-        "oldString": .string(args[2]),
-        "newString": .string(args[3])
+        "filePath": .string(args[0]),
+        "oldString": .string(args[1]),
+        "newString": .string(args[2])
       ]
     )
   }
 
   static let refreshIssuesCommand = Command(
     name: "refresh-issues",
-    usage: "refresh-issues <tab-id> <file>  Refresh compiler diagnostics for a file",
-    minArgs: 2
+    usage: "refresh-issues <file>     Refresh compiler diagnostics for a file",
+    minArgs: 1
   ) { args in
     callToolRequest(
       tool: XcodeTool.refreshIssues,
-      arguments: ["tabIdentifier": .string(args[0]), "filePath": .string(args[1])]
+      arguments: ["filePath": .string(args[0])]
     )
   }
 
   static let execCommand = Command(
     name: "exec",
-    usage: "exec <tab-id> <file> <purpose> <code>  Execute a Swift code snippet",
-    minArgs: 4
+    usage: "exec <file> <purpose> <code>  Execute a Swift code snippet",
+    minArgs: 3
   ) { args in
     callToolRequest(
-      tool: XcodeTool.executeSnippet,
+      tool: XcodeTool.runCodeSnippet,
       arguments: [
-        "tabIdentifier": .string(args[0]),
-        "sourceFilePath": .string(args[1]),
-        "purpose": .string(args[2]),
-        "codeSnippet": .string(args[3])
+        "sourceFilePath": .string(args[0]),
+        "purpose": .string(args[1]),
+        "codeSnippet": .string(args[2])
       ]
     )
   }
 
   static let previewCommand = Command(
     name: "preview",
-    usage: "preview <tab-id> <file> [index]  Render a SwiftUI preview",
-    minArgs: 2
+    usage: "preview <file> [index]    Render a SwiftUI preview",
+    minArgs: 1
   ) { args in
-    var toolArgs: JSONValue = [
-      "tabIdentifier": .string(args[0]),
-      "sourceFilePath": .string(args[1])
-    ]
-    if args.count >= 3, let idx = Int(args[2]), var obj = toolArgs.objectValue {
+    var toolArgs: JSONValue = ["sourceFilePath": .string(args[0])]
+    if args.count >= 2, let idx = Int(args[1]), var obj = toolArgs.objectValue {
       obj["previewDefinitionIndexInFile"] = .int(idx)
       toolArgs = .object(obj)
     }

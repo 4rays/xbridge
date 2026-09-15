@@ -1,14 +1,14 @@
 ## ADDED Requirements
 
 ### Requirement: Real Xcode liveness probe
-`MCPClient.probe()` SHALL call `XcodeListWindows` (a real Xcode tool) to determine bridge health. `tools/list` MUST NOT be used as a health indicator.
+`MCPClient.probe()` SHALL call `XcodeListWorkspaces` (a real Xcode tool) to determine bridge health. `tools/list` MUST NOT be used as a health indicator.
 
-#### Scenario: probe returns healthy when XcodeListWindows succeeds
-- **WHEN** `probe()` is called and `XcodeListWindows` returns a non-error result
+#### Scenario: probe returns healthy when XcodeListWorkspaces succeeds
+- **WHEN** `probe()` is called and `XcodeListWorkspaces` returns a non-error result
 - **THEN** bridge state is reported as `healthy`
 
 #### Scenario: probe returns awaiting-permission when bridge died during call
-- **WHEN** `probe()` is called and `mcpbridge` exits during the `XcodeListWindows` call
+- **WHEN** `probe()` is called and `mcpbridge` exits during the `XcodeListWorkspaces` call
 - **THEN** bridge state is reported as `awaiting-permission`
 
 #### Scenario: probe returns down when bridge is not running
@@ -29,7 +29,7 @@
 - **AND** output contains the hint: "open Xcode first: open -a Xcode"
 
 #### Scenario: Status shows healthy only when tool calls will succeed
-- **WHEN** `xbridge status` is called and the `XcodeListWindows` probe succeeds
+- **WHEN** `xbridge status` is called and the `XcodeListWorkspaces` probe succeeds
 - **THEN** output contains `bridge : healthy`
 
 ### Requirement: Structured error codes on LocalRPCError

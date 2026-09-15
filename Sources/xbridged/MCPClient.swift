@@ -48,7 +48,7 @@ actor MCPClient {
     guard case .ready = linkState else { return linkState }
     let id = await bridge.nextID()
     let params: JSONValue = [
-      "name": .string("XcodeListWindows"),
+      "name": .string(XcodeTool.listWorkspaces),
       "arguments": .object([:])
     ]
     let request = MCPRequest(id: id, method: "tools/call", params: params)

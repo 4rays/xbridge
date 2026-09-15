@@ -80,15 +80,28 @@ Then open your project in Xcode and proceed to [Using xbridge](#using-xbridge).
 - Xcode running with a project open
 - Xcode MCP enabled in **Xcode > Settings > Intelligence > Model Context Protocol**
 
-### Get a Tab ID First
+### Workspaces
 
-Most commands require a tab ID. Always start with:
+Xcode 27 tools operate on a workspace. Start with:
 
 ```bash
-xbridge list-windows
+xbridge list-workspaces
 ```
 
-This returns identifiers like `windowtab1`, `windowtab2`. Use the relevant one in subsequent commands.
+This returns identifiers like `workspace1` or `workspace-0a3nvoDgQe`. When more than one workspace is open, pass `--workspace <id>` on every other command:
+
+```bash
+xbridge --workspace workspace1 build
+xbridge build --workspace workspace1
+```
+
+If no workspace is open, open one first — that is also what triggers the Allow prompt:
+
+```bash
+xbridge open-workspace /path/to/MyApp.xcodeproj
+```
+
+Xcode 27’s Allow grant lasts **24 hours per agent and project**. There is no permanent option. After it expires, `open-workspace` again and click Allow.
 
 ### Timeouts
 
@@ -100,7 +113,7 @@ Build, test, and log commands can run for minutes on large projects. Always pass
 | Medium (single app)           | 5 min             |
 | Large (monorepo/many targets) | 15+ min           |
 
-Commands most likely to need a timeout: `build`, `test`, `test-run`, `build-log`, `refresh-issues`.
+Commands most likely to need a timeout: `build`, `run`, `test`, `test-run`, `build-log`, `refresh-issues`.
 
 ## Commands Reference
 
@@ -117,96 +130,109 @@ Commands most likely to need a timeout: `build`, `test`, `test-run`, `build-log`
 | `xbridge tools`                   | List all MCP tools from Xcode             |
 | `xbridge tool-schema <ToolName>`  | Show input schema for a tool              |
 | `xbridge call <ToolName> [json]`  | Call any MCP tool with optional JSON args |
-| `xbridge list-windows`            | List open Xcode windows and tabs          |
+| `xbridge --workspace <id> …`      | Target a workspace when several are open  |
+| `xbridge list-workspaces`         | List open Xcode workspaces                |
+| `xbridge open-workspace <path>`   | Open a .xcworkspace or .xcodeproj         |
+| `xbridge close-workspace <id>`    | Close a workspace by identifier           |
+| `xbridge list-schemes`            | List schemes                              |
+| `xbridge switch-scheme <name>`    | Make a scheme active                      |
+| `xbridge list-destinations`       | List run destinations                     |
+| `xbridge switch-destination <title>` | Make a run destination active          |
+| `xbridge list-targets`            | List targets                              |
+| `xbridge list-test-plans`         | List test plans for the active scheme     |
+| `xbridge switch-test-plan <name>` | Make a test plan active                   |
 
 ### File Operations
 
-| Command                                       | Description                   |
-| --------------------------------------------- | ----------------------------- |
-| `xbridge read <file> <tab-id>`                | Read a file                   |
-| `xbridge write <tab-id> <path> <content>`     | Create or overwrite a file    |
-| `xbridge update <tab-id> <path> <old> <new>`  | Replace text in a file        |
-| `xbridge ls <tab-id> <path>`                  | List files at path            |
-| `xbridge glob <tab-id> [pattern]`             | Find files matching a pattern |
-| `xbridge grep <pattern> <tab-id> [path]`      | Search file contents          |
-| `xbridge mkdir <tab-id> <path>`               | Create a directory            |
-| `xbridge rm <tab-id> <path>`                  | Remove a file or directory    |
-| `xbridge mv <tab-id> <src> <dst>`             | Move or rename a file         |
+| Command                                 | Description                   |
+| --------------------------------------- | ----------------------------- |
+| `xbridge read <file>`                   | Read a file                   |
+| `xbridge write <path> <content>`        | Create or overwrite a file    |
+| `xbridge update <path> <old> <new>`     | Replace text in a file        |
+| `xbridge ls <path>`                     | List files at path            |
+| `xbridge glob [pattern]`                | Find files matching a pattern |
+| `xbridge grep <pattern> [path]`         | Search file contents          |
+| `xbridge mkdir <path>`                  | Create a directory            |
+| `xbridge rm <path>`                     | Remove a file or directory    |
+| `xbridge mv <src> <dst>`                | Move or rename a file         |
 
 ### Build & Test
 
-| Command                                            | Description                             |
-| -------------------------------------------------- | --------------------------------------- |
-| `xbridge build <tab-id>`                           | Build the project                       |
-| `xbridge build-log <tab-id>`                       | Show the build log                      |
-| `xbridge test <tab-id>`                            | Run all tests                           |
-| `xbridge test-list <tab-id>`                       | List available tests                    |
-| `xbridge test-run <tab-id> <target> <identifier>`  | Run a specific test                     |
-| `xbridge issues <tab-id> [severity]`               | Show build issues (severity: `error`\|`warning`\|`remark`, default: `error`) |
-| `xbridge refresh-issues <tab-id> <file>`           | Refresh compiler diagnostics for a file |
+| Command                                      | Description                             |
+| -------------------------------------------- | --------------------------------------- |
+| `xbridge build`                              | Build the current scheme                |
+| `xbridge run`                                | Build and run the current scheme        |
+| `xbridge stop-run`                           | Stop the running app                    |
+| `xbridge build-log`                          | Show the build log                      |
+| `xbridge console`                            | Show console output from the latest launch |
+| `xbridge test`                               | Run all tests                           |
+| `xbridge test-list`                          | List available tests                    |
+| `xbridge test-run <target> <identifier>`     | Run a specific test                     |
+| `xbridge issues [severity]`                  | Show build issues (severity: `error`\|`warning`\|`remark`, default: `error`) |
+| `xbridge refresh-issues <file>`              | Refresh compiler diagnostics for a file |
+| `xbridge build-settings <target>`            | Show build settings for a target        |
+| `xbridge debug <command>`                    | Send an lldb command                    |
 
 ### Advanced
 
-| Command                                          | Description                          |
-| ------------------------------------------------ | ------------------------------------ |
-| `xbridge exec <tab-id> <file> <purpose> <code>`  | Execute a Swift code snippet         |
-| `xbridge preview <tab-id> <file> [index]`        | Render a SwiftUI preview             |
-| `xbridge docs <query> [framework]`               | Search Apple Developer Documentation |
+| Command                                    | Description                  |
+| ------------------------------------------ | ---------------------------- |
+| `xbridge exec <file> <purpose> <code>`     | Execute a Swift code snippet |
+| `xbridge preview <file> [index]`           | Render a SwiftUI preview     |
+| `xbridge docs <query> [framework]`         | Search Apple Developer Documentation |
+
+Specialized tools (device interaction, localization, crash reports, entitlements) have no dedicated subcommand. Use `xbridge call <ToolName> [json]`.
 
 ## Common Workflows
 
 ### Build a project
 
 ```bash
-xbridge list-windows
-# → windowtab1  /path/to/Project.xcodeproj
+xbridge list-workspaces
+# → workspace1  /path/to/Project.xcodeproj
 
-xbridge build windowtab1
-xbridge build-log windowtab1
+xbridge --workspace workspace1 build
+xbridge --workspace workspace1 build-log
 ```
 
 ### Run tests
 
 ```bash
-xbridge list-windows
-xbridge test-list windowtab1
+xbridge --workspace workspace1 test-list
 # Output truncates on large projects — full list written to path in `fullTestListPath` field
-xbridge test windowtab1
+xbridge --workspace workspace1 test
 # or a specific test — parentheses () required in identifier or test won't be found:
-xbridge test-run windowtab1 MyTarget 'MyTests/testSomething()'
+xbridge --workspace workspace1 test-run MyTarget 'MyTests/testSomething()'
 ```
 
 ### Edit a file
 
 ```bash
-xbridge update windowtab1 Sources/MyView.swift 'Text("Hello")' 'Text("Hello, World!")'
+xbridge --workspace workspace1 update Sources/MyView.swift 'Text("Hello")' 'Text("Hello, World!")'
 ```
 
 ### Search code
 
 ```bash
-xbridge grep "someFunction" windowtab1 Sources/
+xbridge --workspace workspace1 grep "someFunction" Sources/
 ```
 
 ### Get Xcode issues
 
 ```bash
-xbridge list-windows
-# → windowtab1  /path/to/Project.xcodeproj
-
-xbridge issues windowtab1
+xbridge --workspace workspace1 issues
 # Lists errors only (default)
 
-xbridge issues windowtab1 warning
+xbridge --workspace workspace1 issues warning
 # Lists warnings and above
 
-xbridge issues windowtab1 remark
+xbridge --workspace workspace1 issues remark
 # Lists everything
 
 # Refresh diagnostics for a specific file first if issues are stale.
 # Path is relative to workspace root (ProjectName/Path/To/File.swift):
-xbridge refresh-issues windowtab1 MyApp/Sources/MyView.swift
-xbridge issues windowtab1
+xbridge --workspace workspace1 refresh-issues MyApp/Sources/MyView.swift
+xbridge --workspace workspace1 issues
 ```
 
 ### Search documentation
@@ -228,8 +254,14 @@ Ensure Xcode is open with a project and MCP is enabled in **Xcode > Settings > I
 **Command returns `WAITING_FOR_PERMISSION`**
 Xcode is showing **Allow “xbridge” to access Xcode?**. Click **Allow** via Accessibility — see [Remote Allow](#remote-allow-accessibility) — then re-run the same command. The daemon retries automatically once permission is granted.
 
-**No tab IDs from `xbridge list-windows`**
-Xcode must be running with a project open. Run `open MyApp.xcodeproj` first.
+**Grant expired / “isn't approved to use Xcode's tools yet”**
+Xcode 27’s Allow grant lasts 24 hours per agent and project. Run `xbridge open-workspace /path/to/MyApp.xcodeproj` again and click Allow. There is no permanent option.
+
+**`workspaceIdentifier is required`**
+More than one workspace is open. Pass `--workspace <id>` from `xbridge list-workspaces`.
+
+**No workspaces from `xbridge list-workspaces`**
+Xcode must be running with a project open. Run `xbridge open-workspace MyApp.xcodeproj` first.
 
 **Xcode MCP not enabled**
 Go to **Xcode > Settings > Intelligence > Model Context Protocol** and enable Xcode Tools.

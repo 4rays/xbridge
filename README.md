@@ -69,14 +69,18 @@ cp -r xbridge/skills/* .agents/skills/
 ## Usage
 
 ```bash
-xbridge list-windows                        # discover tab IDs
-xbridge build windowtab1
-xbridge test windowtab1
-xbridge read MyFile.swift windowtab1
-xbridge grep "TODO" windowtab1
-xbridge docs "SwiftUI animations"
+xbridge list-workspaces                     # discover workspace IDs
+xbridge --workspace workspace1 build
+xbridge --workspace workspace1 test
+xbridge --workspace workspace1 read MyFile.swift
+xbridge --workspace workspace1 grep "TODO"
+xbridge --workspace workspace1 list-schemes
 xbridge status
 ```
+
+`--workspace <id>` is required when more than one workspace is open. Omit it when only one project is loaded.
+
+Xcode 27 asks you to Allow the agent the first time a project is opened via `open-workspace`. That grant lasts 24 hours per agent and project. There is no permanent option.
 
 The daemon starts automatically on first use. Xcode may ask for permission the first time the daemon connects to the bridge.
 
@@ -98,31 +102,46 @@ Installs `xbridge` and `xbridged` to `~/.local/bin`. Requires Swift 6.3+ and Xco
 
 ## Commands
 
-| Command                              | Description                           |
-| ------------------------------------ | ------------------------------------- |
-| `list-windows`                       | List open Xcode windows and tab IDs   |
-| `build <tab>`                        | Build the project                     |
-| `test <tab>`                         | Run all tests                         |
-| `test-run <tab> <target> <id>`       | Run a specific test                   |
-| `test-list <tab>`                    | List available tests                  |
-| `read <file> <tab>`                  | Read a file                           |
-| `write <tab> <path> <content>`       | Create or overwrite a file            |
-| `update <tab> <path> <old> <new>`    | Replace text in a file                |
-| `grep <pattern> <tab> [path]`        | Search in the project                 |
-| `ls <tab> <path>`                    | List files at a project path          |
-| `glob <tab> [pattern]`               | Find files by wildcard pattern        |
-| `issues <tab>`                       | Show navigator issues                 |
-| `refresh-issues <tab> <file>`        | Refresh diagnostics for a file        |
-| `build-log <tab>`                    | Show the build log                    |
-| `mkdir <tab> <path>`                 | Create a directory                    |
-| `rm <tab> <path>`                    | Remove a file or directory            |
-| `mv <tab> <src> <dst>`               | Move or rename a file                 |
-| `exec <tab> <file> <purpose> <code>` | Execute a Swift code snippet          |
-| `preview <tab> <file> [index]`       | Render a SwiftUI preview              |
-| `docs <query> [framework]`           | Search Apple Developer Documentation  |
-| `tools`                              | List all MCP tools from the bridge    |
-| `tool-schema <name>`                 | Show input schema for a tool          |
-| `call <ToolName> [json]`             | Call any tool with raw JSON arguments |
+| Command                                | Description                           |
+| -------------------------------------- | ------------------------------------- |
+| `--workspace <id>`                     | Target a workspace (global flag)      |
+| `list-workspaces`                      | List open Xcode workspaces            |
+| `open-workspace <path>`                | Open a .xcworkspace or .xcodeproj     |
+| `close-workspace <id>`                 | Close a workspace by identifier       |
+| `list-schemes`                         | List schemes in the current workspace |
+| `switch-scheme <name>`                 | Make a scheme active                  |
+| `list-destinations`                    | List run destinations                 |
+| `switch-destination <title>`           | Make a run destination active         |
+| `list-targets`                         | List targets in the current workspace |
+| `list-test-plans`                      | List test plans for the active scheme |
+| `switch-test-plan <name>`              | Make a test plan active               |
+| `build`                                | Build the current scheme              |
+| `run`                                  | Build and run the current scheme      |
+| `stop-run`                             | Stop the running app                  |
+| `test`                                 | Run all tests                         |
+| `test-run <target> <id>`               | Run a specific test                   |
+| `test-list`                            | List available tests                  |
+| `read <file>`                          | Read a file                           |
+| `write <path> <content>`               | Create or overwrite a file            |
+| `update <path> <old> <new>`            | Replace text in a file                |
+| `grep <pattern> [path]`                | Search in the project                 |
+| `ls <path>`                            | List files at a project path          |
+| `glob [pattern]`                       | Find files by wildcard pattern        |
+| `issues [severity]`                    | Show build issues                     |
+| `refresh-issues <file>`                | Refresh diagnostics for a file        |
+| `build-log`                            | Show the build log                    |
+| `console`                              | Show console output from latest launch|
+| `debug <command>`                      | Send an lldb command                  |
+| `build-settings <target>`              | Show build settings for a target      |
+| `mkdir <path>`                         | Create a directory                    |
+| `rm <path>`                            | Remove a file or directory            |
+| `mv <src> <dst>`                       | Move or rename a file                 |
+| `exec <file> <purpose> <code>`         | Execute a Swift code snippet          |
+| `preview <file> [index]`               | Render a SwiftUI preview              |
+| `docs <query> [framework]`             | Search Apple Developer Documentation  |
+| `tools`                                | List all MCP tools from the bridge    |
+| `tool-schema <name>`                   | Show input schema for a tool          |
+| `call <ToolName> [json]`               | Call any tool with raw JSON arguments |
 
 ## How It Works
 
