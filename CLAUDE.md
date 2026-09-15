@@ -35,7 +35,7 @@
 
 ## Subcommand Policy
 
-First-class subcommands cover daily Xcode 27 workflows (workspaces, schemes, destinations, build/run/test, files). Specialized tools (device interaction, localization, crash reports, entitlements) stay on `xbridge call <ToolName> [json]`.
+First-class subcommands cover daily Xcode 27 workflows (workspaces, schemes, destinations, build/run/test, files, device hub). Specialized tools (localization, crash reports, entitlements) stay on `xbridge call <ToolName> [json]`.
 
 To check what tools the connected Xcode actually exposes: `xbridge tools`
 

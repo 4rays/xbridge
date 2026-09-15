@@ -54,7 +54,12 @@ enum Commands {
     execCommand,
     previewCommand,
     buildSettingsCommand,
-    docsCommand
+    docsCommand,
+    deviceStartCommand,
+    deviceSessionCommand,
+    deviceEndCommand,
+    deviceInstallCommand,
+    deviceInteractCommand
   ]
 
   static func find(named name: String) -> Command? {
@@ -495,6 +500,77 @@ enum Commands {
       toolArgs = .object(obj)
     }
     return callToolRequest(tool: XcodeTool.documentationSearch, arguments: toolArgs)
+  }
+
+  // MARK: - Device interaction
+
+  static let deviceStartCommand = Command(
+    name: "device-start",
+    usage: "device-start <session> [device]  Start a workspace-bound device session",
+    minArgs: 1
+  ) { args in
+    var dict: [String: JSONValue] = ["sessionIdentifier": .string(args[0])]
+    if args.count >= 2 {
+      dict["deviceIdentifier"] = .string(args[1])
+    }
+    return callToolRequest(
+      tool: XcodeTool.deviceInteractionStartWorkspaceSession,
+      arguments: .object(dict)
+    )
+  }
+
+  static let deviceSessionCommand = Command(
+    name: "device-session",
+    usage: "device-session <device> <session>  Start a device session without a workspace",
+    minArgs: 2
+  ) { args in
+    callToolRequest(
+      tool: XcodeTool.deviceInteractionStartSession,
+      arguments: [
+        "deviceIdentifier": .string(args[0]),
+        "sessionIdentifier": .string(args[1])
+      ]
+    )
+  }
+
+  static let deviceEndCommand = Command(
+    name: "device-end",
+    usage: "device-end <key>          End a device session",
+    minArgs: 1
+  ) { args in
+    callToolRequest(
+      tool: XcodeTool.deviceInteractionEndSession,
+      arguments: ["interactionSessionKey": .string(args[0])]
+    )
+  }
+
+  static let deviceInstallCommand = Command(
+    name: "device-install",
+    usage: "device-install <key>      Build, install, and run on the session device",
+    minArgs: 1
+  ) { args in
+    callToolRequest(
+      tool: XcodeTool.deviceInteractionInstallAndRun,
+      arguments: ["interactionSessionKey": .string(args[0])]
+    )
+  }
+
+  static let deviceInteractCommand = Command(
+    name: "device-interact",
+    usage: "device-interact <key> [command] [bundle-id]  Synthesize a device event",
+    minArgs: 1
+  ) { args in
+    var dict: [String: JSONValue] = ["interactSessionKey": .string(args[0])]
+    if args.count >= 2 {
+      dict["interactionCommand"] = .string(args[1])
+    }
+    if args.count >= 3 {
+      dict["activationBundleId"] = .string(args[2])
+    }
+    return callToolRequest(
+      tool: XcodeTool.deviceInteractionSynthesize,
+      arguments: .object(dict)
+    )
   }
 
   // MARK: - Helper

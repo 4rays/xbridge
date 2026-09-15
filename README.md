@@ -139,6 +139,11 @@ Installs `xbridge` and `xbridged` to `~/.local/bin`. Requires Swift 6.3+ and Xco
 | `exec <file> <purpose> <code>`         | Execute a Swift code snippet          |
 | `preview <file> [index]`               | Render a SwiftUI preview              |
 | `docs <query> [framework]`             | Search Apple Developer Documentation  |
+| `device-start <session> [device]`      | Start a workspace-bound device session|
+| `device-session <device> <session>`    | Start a device session without a workspace |
+| `device-end <key>`                     | End a device session                  |
+| `device-install <key>`                 | Build, install, and run on the session device |
+| `device-interact <key> [command] [bundle-id]` | Synthesize a device event      |
 | `tools`                                | List all MCP tools from the bridge    |
 | `tool-schema <name>`                   | Show input schema for a tool          |
 | `call <ToolName> [json]`               | Call any tool with raw JSON arguments |
