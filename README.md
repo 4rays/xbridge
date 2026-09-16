@@ -148,6 +148,22 @@ Installs `xbridge` and `xbridged` to `~/.local/bin`. Requires Swift 6.3+ and Xco
 | `tool-schema <name>`                   | Show input schema for a tool          |
 | `call <ToolName> [json]`               | Call any tool with raw JSON arguments |
 
+### Large Test Plans
+
+`test-list` returns at most 100 tests inline. Its `fullTestListPath` artifact contains every test Xcode has discovered, and `test-run` can run a test outside the inline 100 when given its exact identifier. Swift Testing identifiers use `SuiteName/testName()` format, including the parentheses.
+
+If both the response and artifact unexpectedly contain exactly 100 tests with `truncated: false`, Xcode's test discovery snapshot may be incomplete. Switch to the test target's owning scheme and list its tests, then switch back and list the original test plan again:
+
+```bash
+xbridge --workspace workspace1 switch-scheme Feature
+xbridge --workspace workspace1 test-list
+xbridge --workspace workspace1 switch-scheme App
+xbridge --workspace workspace1 test-list
+xbridge --workspace workspace1 test-run FeatureTests 'FeatureTests/testSomething()'
+```
+
+Running the test while its owning scheme is active is also a reliable fallback.
+
 ## How It Works
 
 `xbridged` owns the only connection to Xcode's MCP bridge. It handles tool discovery and request correlation. The CLI connects to the daemon over a Unix domain socket at `~/Library/Application Support/xbridge/daemon.sock`.

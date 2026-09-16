@@ -213,11 +213,25 @@ xbridge --workspace workspace1 build-log
 
 ```bash
 xbridge --workspace workspace1 test-list
-# Output truncates on large projects — full list written to path in `fullTestListPath` field
+# At most 100 tests are returned inline; all discovered tests are written to `fullTestListPath`.
 xbridge --workspace workspace1 test
-# or a specific test — parentheses () required in identifier or test won't be found:
+# A specific test can be outside the inline 100. Parentheses () are required:
 xbridge --workspace workspace1 test-run MyTarget 'MyTests/testSomething()'
 ```
+
+Swift Testing identifiers use `SuiteName/testName()` format without a module or target prefix. Pass the test target separately as the first `test-run` argument.
+
+If the response and `fullTestListPath` artifact unexpectedly contain exactly 100 tests with `truncated: false`, Xcode's discovery snapshot may be incomplete. Force discovery through the test target's owning scheme, then return to the original scheme:
+
+```bash
+xbridge --workspace workspace1 switch-scheme Feature
+xbridge --workspace workspace1 test-list
+xbridge --workspace workspace1 switch-scheme App
+xbridge --workspace workspace1 test-list
+xbridge --workspace workspace1 test-run FeatureTests 'FeatureTests/testSomething()'
+```
+
+Running `test-run` while the owning scheme is active is also a reliable fallback. `GetTestList` has no target, name, pagination, or limit fields; do not pass unsupported filters through `xbridge call`.
 
 ### Edit a file
 
