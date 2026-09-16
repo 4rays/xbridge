@@ -36,4 +36,31 @@ struct GlobalCLIOptionsTests {
     #expect(result.path == nil)
     #expect(result.remaining == ["--xcode-path"])
   }
+
+  @Test("Extracts --workspace from the prefix")
+  func extractsWorkspaceFromPrefix() {
+    let result = GlobalCLIOptions.extract(
+      from: ["--workspace", "workspace1", "build"]
+    )
+    #expect(result.workspace == "workspace1")
+    #expect(result.remaining == ["build"])
+  }
+
+  @Test("Extracts --workspace after the command")
+  func extractsWorkspaceAfterCommand() {
+    let result = GlobalCLIOptions.extract(
+      from: ["build", "--workspace", "workspace1"]
+    )
+    #expect(result.workspace == "workspace1")
+    #expect(result.remaining == ["build"])
+  }
+
+  @Test("Leaves a later --workspace used as a positional after stripping the first")
+  func stripsOnlyFirstWorkspace() {
+    let result = GlobalCLIOptions.extract(
+      from: ["grep", "--workspace", "workspace1", "--workspace"]
+    )
+    #expect(result.workspace == "workspace1")
+    #expect(result.remaining == ["grep", "--workspace"])
+  }
 }

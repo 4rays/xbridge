@@ -107,4 +107,31 @@ struct MCPMessagesTests {
     #expect(json["protocolVersion"]?.stringValue == "2024-11-05")
     #expect(json["clientInfo"]?["name"]?.stringValue == "xbridge")
   }
+
+  // MARK: - XcodeTool
+
+  @Test("XcodeTool names match Xcode 27 MCP tool identifiers")
+  func xcodeToolNames() {
+    #expect(XcodeTool.listWorkspaces == "XcodeListWorkspaces")
+    #expect(XcodeTool.openWorkspace == "XcodeOpenWorkspace")
+    #expect(XcodeTool.closeWorkspace == "XcodeCloseWorkspace")
+    #expect(XcodeTool.buildProject == "BuildProject")
+    #expect(XcodeTool.runProject == "RunProject")
+    #expect(XcodeTool.stopProject == "StopProject")
+    #expect(XcodeTool.runAllTests == "RunAllTests")
+    #expect(XcodeTool.runSomeTests == "RunSomeTests")
+    #expect(XcodeTool.listTests == "GetTestList")
+    #expect(XcodeTool.readFile == "XcodeRead")
+    #expect(XcodeTool.grepInProject == "XcodeGrep")
+    #expect(XcodeTool.getBuildLog == "GetBuildLog")
+    #expect(XcodeTool.getConsoleOutput == "GetConsoleOutput")
+    #expect(XcodeTool.runCodeSnippet == "RunCodeSnippet")
+    #expect(XcodeTool.listSchemes == "XcodeListSchemes")
+    #expect(XcodeTool.switchScheme == "XcodeSwitchScheme")
+    #expect(XcodeTool.listRunDestinations == "XcodeListRunDestinations")
+    #expect(XcodeTool.switchRunDestination == "XcodeSwitchRunDestination")
+    #expect(XcodeTool.invokeDebuggerCommand == "InvokeDebuggerCommand")
+    #expect(XcodeTool.getTargetBuildSettings == "GetTargetBuildSettings")
+    #expect(XcodeTool.documentationSearch == "DocumentationSearch")
+  }
 }

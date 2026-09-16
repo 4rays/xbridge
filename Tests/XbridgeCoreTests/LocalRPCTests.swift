@@ -80,4 +80,28 @@ struct LocalRPCTests {
     #expect(decoded.tool == "build_project")
     #expect(decoded.arguments["tabIdentifier"]?.stringValue == "win1")
   }
+
+  @Test("injectingWorkspace adds workspaceIdentifier when missing")
+  func injectingWorkspaceAddsIdentifier() {
+    let params = CallToolParams(tool: XcodeTool.buildProject, arguments: [:])
+    let injected = params.injectingWorkspace("workspace1")
+    #expect(injected.arguments["workspaceIdentifier"]?.stringValue == "workspace1")
+  }
+
+  @Test("injectingWorkspace does not overwrite an existing identifier")
+  func injectingWorkspacePreservesExisting() {
+    let params = CallToolParams(
+      tool: XcodeTool.buildProject,
+      arguments: ["workspaceIdentifier": "existing"]
+    )
+    let injected = params.injectingWorkspace("workspace1")
+    #expect(injected.arguments["workspaceIdentifier"]?.stringValue == "existing")
+  }
+
+  @Test("injectingWorkspace skips tools that reject workspaceIdentifier")
+  func injectingWorkspaceSkipsListWorkspaces() {
+    let params = CallToolParams(tool: XcodeTool.listWorkspaces, arguments: [:])
+    let injected = params.injectingWorkspace("workspace1")
+    #expect(injected.arguments["workspaceIdentifier"] == nil)
+  }
 }

@@ -69,4 +69,25 @@ public struct CallToolParams: Codable, Sendable {
     self.tool = tool
     self.arguments = arguments
   }
+
+  /// Tools that reject `workspaceIdentifier` (no such property, or a different required id).
+  public static let toolsWithoutWorkspaceIdentifier: Set<String> = [
+    XcodeTool.listWorkspaces,
+    XcodeTool.openWorkspace,
+    XcodeTool.newProject,
+    XcodeTool.documentationSearch,
+    XcodeTool.deviceInteractionStartSession,
+    XcodeTool.deviceInteractionEndSession,
+    XcodeTool.deviceInteractionSynthesize
+  ]
+
+  public func injectingWorkspace(_ workspace: String?) -> CallToolParams {
+    guard let workspace, !workspace.isEmpty else { return self }
+    guard !Self.toolsWithoutWorkspaceIdentifier.contains(tool) else { return self }
+    guard var object = arguments.objectValue else { return self }
+    if object["workspaceIdentifier"] == nil {
+      object["workspaceIdentifier"] = .string(workspace)
+    }
+    return CallToolParams(tool: tool, arguments: .object(object))
+  }
 }

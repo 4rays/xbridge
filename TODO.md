@@ -2,9 +2,9 @@
 
 ## Milestone 1 — Validate the Permission Model
 
-- [ ] Test `list-windows` against a real running Xcode (validate MCP tool name)
+- [x] Test `list-workspaces` against a real running Xcode (validate MCP tool name)
 - [ ] Verify Xcode prompts for permission once and sticks to the daemon identity
-- [ ] Confirm tool names returned by `xcrun mcpbridge` match `XcodeTool` constants in `MCPMessages.swift`
+- [x] Confirm tool names returned by `xcrun mcpbridge` match `XcodeTool` constants in `MCPMessages.swift`
 
 ## Milestone 2 — Useful Daily Tool
 

@@ -24,7 +24,10 @@
 
 ## Xcode MCP Bridge
 
-- Tool names are PascalCase: `XcodeListWindows`, `BuildProject`, `XcodeGrep`, etc.
+- Tool names are PascalCase: `XcodeListWorkspaces`, `BuildProject`, `XcodeGrep`, etc.
+- Xcode 27 dropped `tabIdentifier` / `XcodeListWindows`. Tools take an optional `workspaceIdentifier` (`xbridge --workspace <id> …`). Required when more than one workspace is open.
+- First contact with a project is `XcodeOpenWorkspace`. That is what asks the user to Allow the agent; the grant is 24 hours per agent + project. There is no way to make it permanent.
+- Health probe is `XcodeListWorkspaces` (no args, no side effects).
 - Run `xbridge tools` to see the live list from the bridge
 - Run `xbridge tool-schema <name>` to inspect argument schemas
 - Bridge response format: `{"structuredContent":{"message":"..."},"content":[...]}`
@@ -32,7 +35,7 @@
 
 ## Subcommand Policy
 
-xbridge has first-class subcommands only for tools available across all supported Xcode versions. Tools introduced in a specific Xcode version (e.g. Xcode 27+) are intentionally not given dedicated subcommands — use `xbridge call <ToolName> [json]` instead. This avoids subcommands that silently fail on older Xcode installations and eliminates annual churn when Apple adds tools.
+First-class subcommands cover daily Xcode 27 workflows (workspaces, schemes, destinations, build/run/test, files, device hub). Specialized tools (localization, crash reports, entitlements) stay on `xbridge call <ToolName> [json]`.
 
 To check what tools the connected Xcode actually exposes: `xbridge tools`
 

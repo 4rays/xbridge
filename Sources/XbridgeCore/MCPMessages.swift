@@ -99,27 +99,76 @@ public struct MCPContent: Codable, Sendable {
 
 // MARK: - Known Xcode tool names
 //
-// Discovered from xcrun mcpbridge via tools/list.
+// Discovered from xcrun mcpbridge via tools/list (Xcode 27).
 
 public enum XcodeTool {
-  public static let listWindows = "XcodeListWindows"
+  // Workspace / project
+  public static let listWorkspaces = "XcodeListWorkspaces"
+  public static let openWorkspace = "XcodeOpenWorkspace"
+  public static let closeWorkspace = "XcodeCloseWorkspace"
+  public static let newProject = "XcodeNewProject"
+  public static let newTarget = "XcodeNewTarget"
+  public static let listTemplates = "XcodeListTemplates"
+  public static let listTargets = "XcodeListTargets"
+  public static let listSchemes = "XcodeListSchemes"
+  public static let switchScheme = "XcodeSwitchScheme"
+  public static let listRunDestinations = "XcodeListRunDestinations"
+  public static let switchRunDestination = "XcodeSwitchRunDestination"
+  public static let listTestPlans = "XcodeListTestPlans"
+  public static let switchTestPlan = "XcodeSwitchTestPlan"
+
+  // Build / run / test
   public static let buildProject = "BuildProject"
+  public static let runProject = "RunProject"
+  public static let stopProject = "StopProject"
   public static let runAllTests = "RunAllTests"
   public static let runSomeTests = "RunSomeTests"
   public static let listTests = "GetTestList"
-  public static let readFile = "XcodeRead"
-  public static let grepInProject = "XcodeGrep"
-  public static let listIssues = "XcodeListNavigatorIssues"
   public static let getBuildLog = "GetBuildLog"
-  public static let listFiles = "XcodeLS"
+  public static let getConsoleOutput = "GetConsoleOutput"
+  public static let invokeDebuggerCommand = "InvokeDebuggerCommand"
+
+  // Files
+  public static let readFile = "XcodeRead"
   public static let writeFile = "XcodeWrite"
   public static let updateFile = "XcodeUpdate"
   public static let removeFile = "XcodeRM"
   public static let makeDir = "XcodeMakeDir"
   public static let moveFile = "XcodeMV"
   public static let globFiles = "XcodeGlob"
+  public static let grepInProject = "XcodeGrep"
+  public static let listFiles = "XcodeLS"
   public static let refreshIssues = "XcodeRefreshCodeIssuesInFile"
-  public static let executeSnippet = "ExecuteSnippet"
+
+  // Preview / snippet
   public static let renderPreview = "RenderPreview"
+  public static let runCodeSnippet = "RunCodeSnippet"
   public static let documentationSearch = "DocumentationSearch"
+
+  // Project settings
+  public static let getTargetBuildSettings = "GetTargetBuildSettings"
+  public static let updateTargetBuildSetting = "UpdateTargetBuildSetting"
+  public static let getFileCompilerFlags = "GetFileCompilerFlags"
+  public static let updateFileCompilerFlags = "UpdateFileCompilerFlags"
+  public static let addEntitlement = "AddEntitlement"
+  public static let addInfoPlist = "AddInfoPlist"
+
+  // Device interaction
+  public static let deviceInteractionStartSession = "DeviceInteractionStartSession"
+  public static let deviceInteractionStartWorkspaceSession = "DeviceInteractionStartWorkspaceSession"
+  public static let deviceInteractionEndSession = "DeviceInteractionEndSession"
+  public static let deviceInteractionInstallAndRun = "DeviceInteractionInstallAndRun"
+  public static let deviceInteractionSynthesize = "DeviceInteractionSynthesize"
+
+  // Localization
+  public static let localizationPlanner = "LocalizationPlanner"
+  public static let stringCatalogRead = "StringCatalogRead"
+  public static let stringCatalogContext = "StringCatalogContext"
+  public static let stringCatalogEdit = "StringCatalogEdit"
+
+  // Diagnostics (App Store Connect)
+  public static let getTopCrashIssues = "GetTopCrashIssues"
+  public static let getCrashIssueLogs = "GetCrashIssueLogs"
+  public static let getTopFieldPerformanceIssues = "GetTopFieldPerformanceIssues"
+  public static let getFieldPerformanceIssueLogs = "GetFieldPerformanceIssueLogs"
 }
