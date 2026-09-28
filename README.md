@@ -84,16 +84,17 @@ Xcode 27 asks you to Allow the agent the first time a project is opened via `ope
 
 The daemon starts automatically on first use. Xcode may ask for permission the first time the daemon connects to the bridge.
 
-For the Xcode 27 access prompt, use the installed Accessibility helper:
+For an Xcode 27 access prompt, run the repair from the **project root** (the directory shown in the dialog):
 
 ```bash
-xbridge-allow          # inspect; never clicks
-xbridge-allow --allow  # press only a verified prompt
+xbridge status                                  # read-only bridge health
+xbridge status --fix                            # allow only if dialog path equals current directory
+xbridge status --fix --project /path/to/project  # explicit project root from elsewhere
 ```
 
-From a source checkout, use `osascript scripts/allow-xcode-access.applescript [--allow]` instead.
+The underlying `xbridge-allow` helper is also available for inspection (`xbridge-allow`) or a guarded click (`xbridge-allow --allow /path/to/project`). From a source checkout, use `osascript scripts/allow-xcode-access.applescript [--allow /path/to/project]` instead.
 
-It matches the `xbridge` prompt in **Xcode Service** (not the main Xcode process), checks the dialog text and two-button layout, and refuses to click if the structure changes or more than one prompt matches. In the observed SwiftUI dialog the buttons expose no Accessibility labels; the **upper** button is “Allow for 24 Hours.” The terminal running `osascript` needs macOS Accessibility permission. The script is not a background watcher; invoke it when a prompt appears.
+Repair matches the `xbridge` prompt in **Xcode Service** (not the main Xcode process), requires its project path to match exactly, checks the dialog text and two-button layout, and refuses to click if the structure changes or more than one prompt matches. In the observed SwiftUI dialog the buttons expose no Accessibility labels; the **upper** button is “Allow for 24 Hours.” The terminal running the CLI needs macOS Accessibility permission. `status --fix` does not discover grants or create a prompt: first run the workspace operation that requests access. It rechecks global bridge health after clicking; retry the original workspace operation to confirm project access.
 
 To manage the daemon manually:
 

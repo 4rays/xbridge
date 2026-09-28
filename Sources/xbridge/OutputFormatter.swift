@@ -54,7 +54,7 @@ struct OutputFormatter {
       case "unhealthy", "down":
         lines += "\n\n→ open Xcode with a project and ensure MCP is enabled"
       case "awaiting-permission":
-        lines += "\n\n→ click Allow in the Xcode permission dialog"
+        lines += "\n\n→ from the project root, run xbridge status --fix (or pass --project <path>)"
       case "linking":
         lines += "\n\n→ bridge is starting, run status again in a moment"
       default:

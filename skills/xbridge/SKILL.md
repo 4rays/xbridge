@@ -424,11 +424,11 @@ The observed Xcode 27 prompt is an `AXDialog` owned by **Xcode Service**, with a
 Use the fail-closed helper (requires Accessibility permission for the terminal/agent host):
 
 ```bash
-xbridge-allow          # read-only inspection
-xbridge-allow --allow  # verifies again, presses upper button once
+xbridge-allow                               # read-only inspection
+xbridge status --fix --project /path/to/root # verifies project path, presses upper button once
 ```
 
-From the xbridge source checkout, use `osascript scripts/allow-xcode-access.applescript [--allow]` instead.
+`xbridge status --fix` defaults to the current working directory as the expected project root; specify `--project` when elsewhere. From a source checkout, use `osascript scripts/allow-xcode-access.applescript --allow /path/to/root` instead. `xbridge-allow --allow` without a project path refuses to click.
 
 The helper requires exactly one matching xbridge prompt and checks its text, hierarchy, button count, and layout. If the prompt differs, **do not click by index**; inspect the actual hierarchy and visible dialog before changing the helper. Confirm disappearance and retry the original bridge operation (a healthy `xbridge status` alone may concern a different workspace). Never walk `entire contents` of Xcode; it can hang.
 

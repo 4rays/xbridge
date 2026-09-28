@@ -84,7 +84,7 @@ enum Commands {
 
   static let statusCommand = Command(
     name: "status",
-    usage: "status                    Show daemon and bridge status",
+    usage: "status [--fix [--project <path>]]  Show status; fix a matching project access prompt",
     minArgs: 0
   ) { _ in
     LocalRPCRequest(method: LocalRPCMethod.status)

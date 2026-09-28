@@ -27,6 +27,22 @@ if commandName == "--version" || commandName == "-v" || commandName == "version"
   exit(0)
 }
 
+if commandName == "status", !commandArgs.isEmpty {
+  do {
+    guard workspace == nil else { throw StatusRepairError.workspaceID }
+    let projectPath = try StatusRepair.projectPath(from: commandArgs)
+    print(try StatusRepair.allow(projectPath: projectPath))
+    let response = try DaemonClient(xcodePath: xcodePath).send(
+      LocalRPCRequest(method: LocalRPCMethod.status)
+    )
+    print(OutputFormatter.format(response: response, method: LocalRPCMethod.status))
+    exit(response.ok ? 0 : 1)
+  } catch {
+    fputs("error: \(error.localizedDescription)\n", stderr)
+    exit(1)
+  }
+}
+
 guard let command = Commands.find(named: commandName) else {
   fputs("error: unknown command '\(commandName)'\n\n", stderr)
   Commands.printHelp()
