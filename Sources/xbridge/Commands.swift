@@ -75,6 +75,7 @@ enum Commands {
     print("")
     print("Commands:")
     print("  version                    Show version")
+    print("  skill                      Print the bundled agent skill (no daemon needed)")
     for cmd in all where !hidden.contains(cmd.name) {
       print("  \(cmd.usage)")
     }

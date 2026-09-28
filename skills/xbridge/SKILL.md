@@ -25,6 +25,8 @@ This skill enables AI agents to interact with Xcode projects via the **xbridge C
 
 ## Setup
 
+If `xbridge` is installed, `xbridge skill` prints the skill bundled with that installed version. A harness can read this output instead of an older saved copy; it does not need Xcode or the daemon. Upgrade xbridge to update the bundled skill.
+
 Run:
 
 ```bash

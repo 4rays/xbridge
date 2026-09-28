@@ -23,8 +23,22 @@ if commandName == "--help" || commandName == "-h" || commandName == "help" {
 
 // Handle version
 if commandName == "--version" || commandName == "-v" || commandName == "version" {
-  print("xbridge 0.9.2")
+  print("xbridge 0.9.3")
   exit(0)
+}
+
+if commandName == "skill" {
+  guard commandArgs.isEmpty else {
+    fputs("usage: xbridge skill\n", stderr)
+    exit(1)
+  }
+  do {
+    try FileHandle.standardOutput.write(contentsOf: SkillDocument.contents())
+    exit(0)
+  } catch {
+    fputs("error: cannot read bundled skill: \(error.localizedDescription)\n", stderr)
+    exit(1)
+  }
 }
 
 if commandName == "status", !commandArgs.isEmpty {

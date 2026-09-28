@@ -26,9 +26,17 @@ jobs:
           mkdir /tmp/xbridge-bin
           cp .build/release/xbridge .build/release/xbridged /tmp/xbridge-bin/
           install -m 755 scripts/allow-xcode-access.applescript /tmp/xbridge-bin/xbridge-allow
+          install -m 644 skills/xbridge/SKILL.md /tmp/xbridge-bin/xbridge-skill.md
           cd /tmp
           tar -czf xbridge-${VERSION}-macos.tar.gz xbridge-bin/
           echo "SHA256=$(shasum -a 256 xbridge-${VERSION}-macos.tar.gz | awk '{print $1}')" >> $GITHUB_ENV
+
+      - name: Verify bundled skill
+        run: |
+          mkdir -p /tmp/xbridge-check/bin /tmp/xbridge-check/share/xbridge
+          cp /tmp/xbridge-bin/xbridge /tmp/xbridge-check/bin/
+          cp /tmp/xbridge-bin/xbridge-skill.md /tmp/xbridge-check/share/xbridge/
+          /tmp/xbridge-check/bin/xbridge skill | cmp - skills/xbridge/SKILL.md
 
       - name: Create GitHub release
         env:
@@ -51,7 +59,7 @@ jobs:
             -e "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA256}\"|" \
             -e "s|version \"[0-9.]*\"|version \"${VERSION}\"|" \
             Formula/xbridge.rb
-          ruby -e 'p = "Formula/xbridge.rb"; s = File.read(p); unless s.include?(%q{bin.install "xbridge-allow"}); abort "missing xbridged install" unless s.include?(%q{    bin.install "xbridged"}); File.write(p, s.sub(%q{    bin.install "xbridged"}, %Q{    bin.install "xbridged"\n    bin.install "xbridge-allow"})); end'
+          ruby -e 'p = "Formula/xbridge.rb"; s = File.read(p); unless s.include?(%q{bin.install "xbridge-allow"}); abort "missing xbridged install" unless s.include?(%q{    bin.install "xbridged"}); s = s.sub(%q{    bin.install "xbridged"}, %Q{    bin.install "xbridged"\n    bin.install "xbridge-allow"}); end; unless s.include?(%q{pkgshare.install "xbridge-skill.md"}); abort "missing xbridge-allow install" unless s.include?(%q{    bin.install "xbridge-allow"}); s = s.sub(%q{    bin.install "xbridge-allow"}, %Q{    bin.install "xbridge-allow"\n    pkgshare.install "xbridge-skill.md"}); end; File.write(p, s)'
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/xbridge.rb

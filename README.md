@@ -26,6 +26,13 @@ sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 
 ### Install the Skill
 
+If `xbridge` is already installed, `xbridge skill` prints the exact `SKILL.md` shipped with that version—no Xcode, daemon, or network required. A harness can read it directly instead of relying on a stale copied skill. Upgrade xbridge to obtain a newer bundled skill. To save a copy:
+
+```bash
+mkdir -p .agents/skills/xbridge
+xbridge skill > .agents/skills/xbridge/SKILL.md
+```
+
 #### Option 1: CLI Install (Recommended)
 
 ```bash
@@ -76,6 +83,7 @@ xbridge --workspace workspace1 read MyFile.swift
 xbridge --workspace workspace1 grep "TODO"
 xbridge --workspace workspace1 list-schemes
 xbridge status
+xbridge skill                               # print bundled agent instructions
 ```
 
 `--workspace <id>` is required when more than one workspace is open. Omit it when only one project is loaded.
