@@ -51,7 +51,7 @@ If the output indicates the bridge is not running, tell the user:
 > xbridge status
 > ```
 >
-> If the bridge shows as `awaiting-permission` or a command hangs on first contact, Xcode is showing **Allow “xbridge” to access Xcode?**. Click **Allow** via Accessibility — see [Remote Allow](#remote-allow-accessibility). Do not wait for a human unless that click fails.
+> If the bridge shows as `awaiting-permission` or a command hangs on first contact, Xcode Service may be showing **Allow an unknown agent (xbridge) to access <project>?**. Use [Remote Allow](#remote-allow-accessibility). Do not wait for a human unless that click fails.
 
 If found and bridge is running, skip to [Using xbridge](#using-xbridge).
 
@@ -366,7 +366,7 @@ Install with `brew tap 4rays/tap && brew install xbridge`.
 Ensure Xcode is open with a project and MCP is enabled in **Xcode > Settings > Intelligence > Model Context Protocol**. The daemon auto-starts and retries on the next command.
 
 **Command returns `WAITING_FOR_PERMISSION`**
-Xcode is showing **Allow “xbridge” to access Xcode?**. Click **Allow** via Accessibility — see [Remote Allow](#remote-allow-accessibility) — then re-run the same command. The daemon retries automatically once permission is granted.
+Xcode Service may be showing the xbridge access prompt. Use [Remote Allow](#remote-allow-accessibility), then re-run the same command. The daemon retries automatically once permission is granted.
 
 **Grant expired / “isn't approved to use Xcode's tools yet”**
 Xcode 27’s Allow grant lasts 24 hours per agent and project. Run `xbridge open-workspace /path/to/MyApp.xcodeproj` again and click Allow. There is no permanent option.
@@ -419,37 +419,17 @@ Add an `AGENTS.md` or `CLAUDE.md` in your project root:
 
 ## Remote Allow (Accessibility)
 
-Xcode prompts **Allow “xbridge” to access Xcode?** on first `xbridged` contact each daemon session (path + PID). It is an Xcode `AXDialog`, not a system TCC sheet. xbridge will not click it for you.
+The observed Xcode 27 prompt is an `AXDialog` owned by **Xcode Service**, with an `AXHostingView` containing the headline, explanation, project path, and two **unlabeled** `AXButton` elements. The upper button is visibly **Allow for 24 Hours**; the lower is **Don’t Allow**. Do not search for `button "Allow"` on the main Xcode process.
 
-If the host (Ghostty, Terminal, the agent app) has Accessibility enabled, click **Allow** instead of waiting for a human:
+Use the fail-closed helper (requires Accessibility permission for the terminal/agent host):
 
-```applescript
-tell application "System Events"
-  tell process "Xcode"
-    set frontmost to true
-    repeat with w in windows
-      if (subrole of w is "AXDialog") then
-        try
-          set dialogText to ""
-          repeat with t in static texts of w
-            set dialogText to dialogText & (value of t as text) & " "
-          end repeat
-          if dialogText contains "xbridge" and dialogText contains "access Xcode" then
-            if exists button "Allow" of w then
-              click button "Allow" of w
-              return "clicked Allow"
-            end if
-          end if
-        end try
-      end if
-    end repeat
-  end tell
-end tell
-return "no Allow dialog"
+```bash
+xbridge-allow          # read-only inspection
+xbridge-allow --allow  # verifies again, presses upper button once
 ```
 
-Confirm with `xbridge status` (`bridge : healthy`). Retry the same script if the dialog is still up — do not click `Allow` on `window 1` without checking the static text.
+From the xbridge source checkout, use `osascript scripts/allow-xcode-access.applescript [--allow]` instead.
 
-**Do not** walk `entire contents` of the Xcode process — it hangs. Query `windows` / `buttons` / `static texts` only.
+The helper requires exactly one matching xbridge prompt and checks its text, hierarchy, button count, and layout. If the prompt differs, **do not click by index**; inspect the actual hierarchy and visible dialog before changing the helper. Confirm disappearance and retry the original bridge operation (a healthy `xbridge status` alone may concern a different workspace). Never walk `entire contents` of Xcode; it can hang.
 
 If AppleScript cannot see or click the dialog, the **hosting process** lacks Accessibility — Terminal, Ghostty, iTerm, the agent app, or whatever launched `osascript`. Ask the developer to enable it in **System Settings → Privacy & Security → Accessibility** for that app, then retry the click. Until that is granted, a human has to click **Allow** in Xcode.

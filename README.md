@@ -84,6 +84,17 @@ Xcode 27 asks you to Allow the agent the first time a project is opened via `ope
 
 The daemon starts automatically on first use. Xcode may ask for permission the first time the daemon connects to the bridge.
 
+For the Xcode 27 access prompt, use the installed Accessibility helper:
+
+```bash
+xbridge-allow          # inspect; never clicks
+xbridge-allow --allow  # press only a verified prompt
+```
+
+From a source checkout, use `osascript scripts/allow-xcode-access.applescript [--allow]` instead.
+
+It matches the `xbridge` prompt in **Xcode Service** (not the main Xcode process), checks the dialog text and two-button layout, and refuses to click if the structure changes or more than one prompt matches. In the observed SwiftUI dialog the buttons expose no Accessibility labels; the **upper** button is “Allow for 24 Hours.” The terminal running `osascript` needs macOS Accessibility permission. The script is not a background watcher; invoke it when a prompt appears.
+
 To manage the daemon manually:
 
 ```bash
@@ -98,7 +109,7 @@ xbridge stop      # shut down the daemon
 make install
 ```
 
-Installs `xbridge` and `xbridged` to `~/.local/bin`. Requires Swift 6.3+ and Xcode 26+.
+Installs `xbridge`, `xbridged`, and `xbridge-allow` to `~/.local/bin`. Requires Swift 6.3+ and Xcode 26+.
 
 ## Commands
 
