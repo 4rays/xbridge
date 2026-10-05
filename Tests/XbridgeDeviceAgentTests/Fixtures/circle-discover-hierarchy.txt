@@ -1,0 +1,25 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.example.Circle
+Application UI orientation: Portrait
+Application, pid: 1000, label: 'Circle'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  NavigationBar, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'navigation-bar', hitPoint: {201.0, 89.0}
+   Button, {{16.0, 68.7}, {106.3, 30.7}}, label: 'Circle Discover', hitPoint: {69.2, 84.0}
+   Button, {{322.0, 66.0}, {64.0, 36.0}}, identifier: 'Profile Image', label: 'Profile menu', hitPoint: {354.0, 84.0}
+    Image, {{315.0, 62.0}, {78.0, 44.0}}, identifier: 'Profile Image', hitPoint: {354.0, 84.0}
+  ScrollView, {{0.0, 116.0}, {402.0, 675.0}}, hitPoint: {201.0, 453.5}
+   ScrollView, {{0.0, 116.0}, {402.0, 52.0}}, hitPoint: {201.0, 142.0}
+    Button, {{20.0, 124.0}, {77.7, 36.0}}, label: 'Explore', Selected, hitPoint: {58.8, 142.0}
+    Button, {{105.7, 124.0}, {83.0, 36.0}}, label: 'Learn AI', hitPoint: {147.2, 142.0}
+    Button, {{196.7, 124.0}, {224.0, 36.0}}, label: 'Start and scale my business', hitPoint: {299.3, 142.0}
+   StaticText, {{20.0, 184.0}, {91.0, 28.3}}, label: 'Trending', hitPoint: {65.5, 198.2}
+   Button, {{20.0, 228.3}, {362.0, 298.3}}, label: 'The Gathering, A mindful community for slow art and self care.', hitPoint: {201.0, 377.5}
+    StaticText, {{20.0, 448.0}, {88.3, 17.7}}, label: 'The Gathering', hitPoint: {64.2, 456.8}
+    StaticText, {{20.0, 473.6}, {361.3, 53.0}}, label: 'A mindful community for slow art and self care.', hitPoint: {200.7, 500.1}
+   Other, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 8 pages', value: 0 %, hitPoint: {384.0, 453.5}
+  TabBar, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar', hitPoint: {201.0, 832.5}
+   Button, {{25.0, 795.0}, {103.3, 54.0}}, label: 'Home', Selected, hitPoint: {76.7, 822.0}
+   Button, {{107.9, 795.0}, {103.3, 54.0}}, label: 'Notifications', hitPoint: {159.6, 822.0}
+   Button, {{190.8, 795.0}, {103.3, 54.0}}, label: 'Messages', hitPoint: {242.4, 822.0}
+   Button, {{273.7, 795.0}, {103.3, 54.0}}, label: 'Search', hitPoint: {325.3, 822.0}

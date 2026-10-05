@@ -79,6 +79,7 @@ enum Commands {
     for cmd in all where !hidden.contains(cmd.name) {
       print("  \(cmd.usage)")
     }
+    print("  device-agent <key> <goal> [options]  Preview or run the Jev device agent")
   }
 
   // MARK: - Lifecycle commands
@@ -297,7 +298,8 @@ enum Commands {
 
   static let issuesCommand = Command(
     name: "issues",
-    usage: "issues [severity]         Show build issues (severity: error|warning|remark, default: error)",
+    usage:
+      "issues [severity]         Show build issues (severity: error|warning|remark, default: error)",
     minArgs: 0
   ) { args in
     var dict: [String: JSONValue] = [:]

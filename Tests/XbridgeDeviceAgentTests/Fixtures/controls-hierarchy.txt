@@ -1,0 +1,16 @@
+Device orientation: Portrait
+------------------------
+Application bundle identifier: com.example.Controls
+Application UI orientation: Portrait
+Application, pid: 2000, label: 'Controls 😀'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  NavigationBar, {{0.0, 60.0}, {402.0, 56.0}}, identifier: 'main-nav', label: 'Profile', hitPoint: {201.0, 88.0}
+   Button, {{8.0, 68.0}, {60.0, 40.0}}, identifier: 'back', label: 'Back', hitPoint: {38.0, 88.0}
+  ScrollView, {{0.0, 116.0}, {402.0, 675.0}}, hitPoint: {201.0, 453.5}
+   StaticText, {{20.0, 140.0}, {250.0, 24.0}}, label: 'Unicode: café 東京 👋', hitPoint: {145.0, 152.0}
+   TextField, {{20.0, 180.0}, {362.0, 44.0}}, identifier: 'display-name', label: 'Display name', value: Kai, Focused, Editable, hitPoint: {201.0, 202.0}, FutureProperty: 'preserve me'
+   SecureTextField, {{20.0, 236.0}, {362.0, 44.0}}, identifier: 'password', label: 'Password', value: •••••, Focused, Secure, Editable, hitPoint: {201.0, 258.0}
+   Switch, {{300.0, 292.0}, {82.0, 44.0}}, identifier: 'notifications', label: 'Notifications', value: 1, Selected, hitPoint: {341.0, 314.0}
+   Button, {{20.0, 352.0}, {120.0, 44.0}}, identifier: 'save-primary', label: 'Save', hitPoint: {80.0, 374.0}
+   Button, {{160.0, 352.0}, {120.0, 44.0}}, identifier: 'save-secondary', label: 'Save', hitPoint: {220.0, 374.0}
+   Button, {{20.0, 412.0}, {120.0, 44.0}}, identifier: 'delete', label: 'Delete', Disabled, hitPoint: {80.0, 434.0}

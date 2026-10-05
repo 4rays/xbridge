@@ -55,6 +55,7 @@ let daemon = DaemonServer(logger: logger, developerDir: developerDir)
 
 signal(SIGTERM, SIG_IGN)
 signal(SIGINT, SIG_IGN)
+signal(SIGPIPE, SIG_IGN)
 
 let sigterm = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
 sigterm.setEventHandler {

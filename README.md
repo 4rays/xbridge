@@ -164,9 +164,46 @@ Installs `xbridge`, `xbridged`, and `xbridge-allow` to `~/.local/bin`. Requires 
 | `device-end <key>`                     | End a device session                  |
 | `device-install <key>`                 | Build, install, and run on the session device |
 | `device-interact <key> [command] [bundle-id]` | Synthesize a device event      |
+| `device-agent <key> <goal> [options]` | Preview or run a bounded Jev device workflow |
 | `tools`                                | List all MCP tools from the bridge    |
 | `tool-schema <name>`                   | Show input schema for a tool          |
 | `call <ToolName> [json]`               | Call any tool with raw JSON arguments |
+
+### Jev Device Agent
+
+`device-agent` uses an existing Device Hub session. It never starts, installs, replaces, or ends a session. Preview is the default and sends no interaction command:
+
+```bash
+export TYPESAFE_API_KEY=...
+export TYPESAFE_MODEL=jev-latest # optional
+
+xbridge --workspace workspace1 device-start "Verify Search" "iPhone 18 Pro"
+xbridge --workspace workspace1 device-install "Verify Search"
+
+# One observation and one Jev decision; no mutation.
+xbridge device-agent "Verify Search" "Open Search"
+
+# Explicitly run the bounded observe/decide/freshness-check/execute loop.
+xbridge device-agent "Verify Search" "Open Search and enter Kai" \
+  --act --steps 8 --min-confidence 0.6 --text "Kai"
+
+xbridge device-end "Verify Search"
+```
+
+Options:
+
+- `--act` enables interaction. Without it, the command is preview-only.
+- `--bundle-id <id>` supplies app identity/activation when Device Hub does not.
+- `--steps <n>` caps executed actions; decision, stale-target, wait, and no-op guards also apply.
+- `--min-confidence <0...1>` gates the operation and its consumed target; default `0.5`.
+- Repeated `--text <value>` options add exact text candidates. Goal spans are also candidates. Jev selects a complete value but never generates text.
+- `--trace <directory>` selects the run directory. The default is under `~/Library/Application Support/xbridge/device-agent-runs/`.
+
+The accessibility hierarchy, goal, and exact text candidates are sent to TypeSafe as structured text. Screenshots, artifact paths, coordinates, credentials, secure-field contents, and raw commands are not sent. Secure fields are never offered for typing. Trace directories are owner-only and contain copied Device Hub artifacts plus normalized observations, redacted TypeSafe exchanges, decisions, actions, retries, timing, and the final status.
+
+Terminal statuses include `preview`, `model_done`, `blocked`, `needs_input`, `low_confidence`, `stuck`, `unstable_ui`, `input_unverified`, `session_expired`, `ambiguous_mutation`, `step_limit`, `decision_limit`, `observation_failure`, and `invalid_policy_response`. `model_done` means Jev judged a fresh, unchanged UI complete; it is not independent verification.
+
+Use a simulator first. If a session expires, start a new one explicitly and rerun the agent with its new key. For uncertain mutations, stale targets, or unverified text, inspect the trace and continue manually with `device-interact`; xbridge will not retry or substitute a session.
 
 ### Large Test Plans
 
