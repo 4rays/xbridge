@@ -9,12 +9,13 @@ let package = Package(
   ],
   products: [
     .executable(name: "xbridge", targets: ["xbridge"]),
-    .executable(name: "xbridged", targets: ["xbridged"])
+    .executable(name: "xbridged", targets: ["xbridged"]),
+    .library(name: "XbridgeDeviceAgent", targets: ["XbridgeDeviceAgent"])
   ],
   targets: [
     .executableTarget(
       name: "xbridge",
-      dependencies: ["XbridgeCore"],
+      dependencies: ["XbridgeCore", "XbridgeDeviceAgent"],
       path: "Sources/xbridge"
     ),
     .executableTarget(
@@ -26,6 +27,11 @@ let package = Package(
       name: "XbridgeCore",
       path: "Sources/XbridgeCore"
     ),
+    .target(
+      name: "XbridgeDeviceAgent",
+      dependencies: ["XbridgeCore"],
+      path: "Sources/XbridgeDeviceAgent"
+    ),
     .testTarget(
       name: "XbridgeCoreTests",
       dependencies: ["XbridgeCore"],
@@ -33,8 +39,14 @@ let package = Package(
     ),
     .testTarget(
       name: "xbridgeTests",
-      dependencies: ["XbridgeCore"],
+      dependencies: ["xbridge", "XbridgeCore", "XbridgeDeviceAgent"],
       path: "Tests/xbridgeTests"
+    ),
+    .testTarget(
+      name: "XbridgeDeviceAgentTests",
+      dependencies: ["XbridgeDeviceAgent", "XbridgeCore"],
+      path: "Tests/XbridgeDeviceAgentTests",
+      resources: [.copy("Fixtures")]
     )
   ],
   swiftLanguageModes: [.v6]

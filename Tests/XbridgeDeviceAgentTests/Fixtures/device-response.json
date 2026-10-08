@@ -1,0 +1,7 @@
+{
+  "applicationState": "RunningForeground",
+  "hierarchyPath": "/tmp/circle-discover-hierarchy.txt",
+  "logsPath": "/tmp/device-logs.txt",
+  "screenshotPath": "/tmp/device-screenshot.png",
+  "thumbnailScreenshotPath": "/tmp/device-thumbnail.png"
+}

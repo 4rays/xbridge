@@ -3,13 +3,19 @@ import Foundation
 import XbridgeCore
 
 /// Connects to the xbridged daemon and sends a single request, returning the response.
-struct DaemonClient {
+struct DaemonClient: Sendable {
   private let socketPath: String
   private let xcodePath: String?
+  private let ioTimeoutSeconds: Int?
 
-  init(socketPath: String = XbridgePaths.socketPath.path, xcodePath: String? = nil) {
+  init(
+    socketPath: String = XbridgePaths.socketPath.path,
+    xcodePath: String? = nil,
+    ioTimeoutSeconds: Int? = nil
+  ) {
     self.socketPath = socketPath
     self.xcodePath = xcodePath
+    self.ioTimeoutSeconds = ioTimeoutSeconds
   }
 
   // MARK: - Send
@@ -27,7 +33,7 @@ struct DaemonClient {
       throw XbridgeError.writeFailed
     }
 
-    guard let responseLine = readLine(fd: fd), !responseLine.isEmpty else {
+    guard let responseLine = try readLine(fd: fd), !responseLine.isEmpty else {
       throw XbridgeError.invalidResponse("Empty response from daemon")
     }
     guard let responseData = responseLine.data(using: .utf8) else {
@@ -61,6 +67,15 @@ struct DaemonClient {
     let fd = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
     guard fd >= 0 else {
       throw XbridgeError.socketError("socket() failed: \(errnoString())")
+    }
+
+    if let ioTimeoutSeconds {
+      var timeout = timeval(tv_sec: ioTimeoutSeconds, tv_usec: 0)
+      let size = socklen_t(MemoryLayout<timeval>.size)
+      withUnsafePointer(to: &timeout) { pointer in
+        _ = Darwin.setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, pointer, size)
+        _ = Darwin.setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, pointer, size)
+      }
     }
 
     var addr = sockaddr_un()
@@ -142,12 +157,19 @@ struct DaemonClient {
 
 // MARK: - POSIX I/O (client side)
 
-private func readLine(fd: Int32) -> String? {
+private func readLine(fd: Int32) throws -> String? {
   var buffer = Data()
   var byte = [UInt8](repeating: 0, count: 1)
   while true {
     let n = Darwin.read(fd, &byte, 1)
-    if n <= 0 { return buffer.isEmpty ? nil : String(data: buffer, encoding: .utf8) }
+    if n == 0 { return buffer.isEmpty ? nil : String(data: buffer, encoding: .utf8) }
+    if n < 0 {
+      if Darwin.errno == EINTR { continue }
+      if Darwin.errno == EAGAIN || Darwin.errno == EWOULDBLOCK {
+        throw XbridgeError.bridgeTimeout
+      }
+      throw XbridgeError.socketError(String(cString: Darwin.strerror(Darwin.errno)))
+    }
     if byte[0] == 0x0A { return String(data: buffer, encoding: .utf8) }
     buffer.append(byte[0])
   }

@@ -184,8 +184,28 @@ Commands most likely to need a timeout: `build`, `run`, `test`, `test-run`, `bui
 | `xbridge device-end <key>`                                 | End a device session                             |
 | `xbridge device-install <key>`                             | Build, install, and run on the session device    |
 | `xbridge device-interact <key> [command] [bundle-id]`      | Synthesize a device event (omit command to snapshot) |
+| `xbridge device-agent <key> <goal> [options]`               | Preview or run a bounded Jev workflow                 |
 
 `device-start` / `device-install` take `--workspace` when several workspaces are open. `device-session`, `device-end`, and `device-interact` do not.
+
+#### Goal-driven device agent
+
+Use `device-agent` when the user supplies a goal that may require repeated observation and several ordinary UI actions. Keep using manual `device-interact` for a known single command, unsupported hardware/orientation actions, diagnosis, or recovery after an uncertain mutation.
+
+The agent requires an existing session and `TYPESAFE_API_KEY`. It is preview-only unless `--act` is explicit:
+
+```bash
+xbridge device-agent "Verify Search" "Open Search"                 # no mutation
+xbridge device-agent "Verify Search" "Search for Kai" --act \
+  --text "Kai" --steps 8 --min-confidence 0.6
+```
+
+- Prefer a simulator. Do not use active mode on an account or workflow with irreversible side effects unless the user explicitly accepts that risk.
+- Supply complete exact values with repeated `--text`; goal spans are also candidates. The agent does not generate text and refuses secure fields.
+- The goal, semantic hierarchy state, and exact candidates go to TypeSafe. Screenshots, coordinates, paths, credentials, and secure values do not.
+- Traces default to `~/Library/Application Support/xbridge/device-agent-runs/`. The final `trace:` line gives the exact owner-only directory.
+- `model_done` is Jev's judgment over a stable fresh snapshot, not independently verified success.
+- On `session_expired`, explicitly start/install a new session. On `ambiguous_mutation`, `unstable_ui`, or `input_unverified`, inspect the trace and recover manually; never repeat the mutation blindly.
 
 Xcode's Device Hub is the in-app automation path. Do not use RocketSim or `simctl install`/`launch` when a Device Hub session can cover the work.
 

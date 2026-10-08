@@ -1,0 +1,13 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.apple.Preferences
+Application UI orientation: Portrait
+Application, pid: 38073, label: 'Settings'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   CollectionView, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'com.apple.settings.sidebar.collectionView', hitPoint: {201.0, 437.0}
+    Cell, {{16.0, 131.3}, {370.0, 54.0}}, hitPoint: {201.0, 158.3}
+     Button, {{16.0, 131.3}, {370.0, 54.0}}, identifier: 'com.apple.settings.general', label: 'General', hitPoint: {201.0, 158.3}
+   Toolbar, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar', hitPoint: {201.0, 437.0}
+    SearchField, {{28.0, 808.0}, {286.0, 28.0}}, label: 'Search', placeholderValue: 'Search', value: General, Keyboard Focused, hitPoint: {171.0, 822.0}
+     Button, {{281.7, 811.0}, {17.3, 22.0}}, identifier: 'Dictate', label: 'Dictate', hitPoint: {290.3, 822.0}

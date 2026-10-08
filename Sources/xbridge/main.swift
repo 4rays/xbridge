@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import XbridgeCore
+import XbridgeDeviceAgent
 
 let extracted = GlobalCLIOptions.extract(from: Array(CommandLine.arguments.dropFirst()))
 let xcodePath = extracted.xcodePath
@@ -37,6 +38,15 @@ if commandName == "skill" {
     exit(0)
   } catch {
     fputs("error: cannot read bundled skill: \(error.localizedDescription)\n", stderr)
+    exit(1)
+  }
+}
+
+if commandName == "device-agent" {
+  do {
+    exit(try await DeviceAgentCLI.run(arguments: commandArgs, xcodePath: xcodePath))
+  } catch {
+    fputs("error: \(error)\n", stderr)
     exit(1)
   }
 }
