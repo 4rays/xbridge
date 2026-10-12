@@ -55,6 +55,20 @@ struct GlobalCLIOptionsTests {
     #expect(result.remaining == ["build"])
   }
 
+  @Test("Strips --debugger before and after the command")
+  func stripsDebugger() {
+    let prefixed = GlobalCLIOptions.extract(from: ["--debugger", "run"])
+    #expect(prefixed.debugger)
+    #expect(prefixed.remaining == ["run"])
+
+    let after = GlobalCLIOptions.extract(
+      from: ["--workspace", "workspace1", "run", "--debugger"]
+    )
+    #expect(after.debugger)
+    #expect(after.workspace == "workspace1")
+    #expect(after.remaining == ["run"])
+  }
+
   @Test("Leaves a later --workspace used as a positional after stripping the first")
   func stripsOnlyFirstWorkspace() {
     let result = GlobalCLIOptions.extract(

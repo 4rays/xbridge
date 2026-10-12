@@ -1,9 +1,11 @@
 /// Global flags that must appear before the command name, plus
 /// `--workspace` which may also appear among command arguments.
+/// `--debugger` is a `run` flag and is stripped wherever it appears.
 public enum GlobalCLIOptions {
   public struct Extracted: Sendable {
     public let xcodePath: String?
     public let workspace: String?
+    public let debugger: Bool
     public let remaining: [String]
   }
 
@@ -20,9 +22,15 @@ public enum GlobalCLIOptions {
     var index = arguments.startIndex
     var xcodePath: String?
     var workspace: String?
+    var debugger = false
 
     while index < arguments.endIndex {
       let argument = arguments[index]
+      if argument == "--debugger" {
+        debugger = true
+        index = arguments.index(after: index)
+        continue
+      }
       if argument == "--xcode-path" {
         let valueIndex = arguments.index(after: index)
         guard valueIndex < arguments.endIndex else { break }
@@ -46,7 +54,11 @@ public enum GlobalCLIOptions {
       workspace = stripped.workspace
       remaining = stripped.remaining
     }
-    return Extracted(xcodePath: xcodePath, workspace: workspace, remaining: remaining)
+    if remaining.contains("--debugger") {
+      debugger = true
+      remaining.removeAll { $0 == "--debugger" }
+    }
+    return Extracted(xcodePath: xcodePath, workspace: workspace, debugger: debugger, remaining: remaining)
   }
 
   /// Removes a `--workspace <id>` pair from command arguments.

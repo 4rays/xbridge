@@ -1,6 +1,6 @@
 ---
 name: xbridge
-description: "Use when working with Xcode projects — building, testing, reading files, searching code, running SwiftUI previews, or building/installing/driving a simulator via Device Hub. Triggers include: 'build Xcode project', 'run tests', 'xbridge', 'Xcode MCP', 'simulator', 'device hub', 'sim-bridge', or any Xcode development task."
+description: "Use when working with Xcode projects — building, testing, reading files, searching code, running SwiftUI previews, or driving a simulator. Triggers include: 'build Xcode project', 'run tests', 'xbridge', 'Xcode MCP', 'simulator', 'device hub', 'sim-bridge', or any Xcode development task."
 ---
 
 # xbridge Skill
@@ -163,7 +163,7 @@ Commands most likely to need a timeout: `build`, `run`, `test`, `test-run`, `bui
 | Command                                      | Description                             |
 | -------------------------------------------- | --------------------------------------- |
 | `xbridge build`                              | Build the current scheme                |
-| `xbridge run`                                | Build and run the current scheme        |
+| `xbridge run [--device <title>] [--debugger]` | Build and run the current scheme       |
 | `xbridge stop-run`                           | Stop the running app                    |
 | `xbridge build-log`                          | Show the build log                      |
 | `xbridge console`                            | Show console output from the latest launch |
@@ -187,7 +187,7 @@ Commands most likely to need a timeout: `build`, `run`, `test`, `test-run`, `bui
 
 `device-start` / `device-install` take `--workspace` when several workspaces are open. `device-session`, `device-end`, and `device-interact` do not.
 
-Xcode's Device Hub is the in-app automation path. Do not use RocketSim or `simctl install`/`launch` when a Device Hub session can cover the work.
+Device Hub is only for taps, swipes, and snapshots. Launch with `xbridge run`. Do not open a session to install or run the app.
 
 ### Advanced
 
@@ -273,7 +273,22 @@ xbridge docs "SwiftUI List" SwiftUI
 
 > **Note:** `docs` output can be large (30KB+). Use narrow, specific queries and pass a framework name to limit results.
 
+### Run on a simulator
+
+Use `run` to build and launch. Do not use Device Hub, RocketSim, or `simctl install`/`launch` for this. Do not search DerivedData for `.app` bundles.
+
+```bash
+xbridge list-workspaces
+xbridge --workspace workspace1 list-destinations
+xbridge --workspace workspace1 run --device "iPhone 18 Pro" --debugger
+xbridge --workspace workspace1 console
+```
+
+`--device` takes a `displayTitle` from `list-destinations`. Omit it to use the destination already selected in Xcode. On failure, inspect `issues` and `build-log`.
+
 ### Drive a simulator (Device Hub)
+
+Open a Device Hub session only when the task needs a tap, swipe, or snapshot. If it only needs the app running, stop after `run`.
 
 Quote every interaction command as **one** shell argument. `device-interact` takes `<key> [command] [bundle-id]`; an unquoted `t 100 200` becomes command `t` and bundle ID `100`.
 
@@ -344,22 +359,16 @@ After each interact, read `applicationState` and the new hierarchy. Confirm the 
 
 ### Local simulator run (replaces sim-bridge)
 
-Use Device Hub for local build/install/run. Do not use RocketSim or `simctl install`/`launch` when Device Hub can cover it. Do not search DerivedData for `.app` bundles.
-
 1. `xbridge status` until `bridge : healthy` and `xcode : open`. Open the project with `open-workspace` if needed.
 2. `xbridge list-workspaces` — pick the entry whose path is inside the repo root. Pass `--workspace <id>` when more than one is open.
-3. `list-schemes` / `list-destinations`. Switch if the user named one.
-   - Explicit destination title, simulator name, or UDID → pass it to `device-start`.
-   - Focused / currently selected Xcode destination → omit the device argument.
-   - Dedicated / branch-named simulator → pass that title if it already appears in `list-destinations`. Do not `simctl clone` unless Device Hub cannot see it.
-4. `xbridge --workspace <id> device-start "Verify Login Flow" "iPhone 18 Pro"` (Title Case session name).
-5. `xbridge --workspace <id> device-install "Verify Login Flow"`. Prefer this over a separate `build` plus `simctl`. On failure, inspect `issues` and `build-log`.
-6. If there are no in-app instructions, `device-end` and report workspace id, destination, and session name.
-7. If there are in-app instructions, snapshot then act with quoted commands (see above). Classify extra text: empty → stop after install; UI actions → `device-interact`; otherwise do not invent behavior.
+3. `list-schemes` / `list-destinations`. Do not `simctl clone` unless the named simulator is missing from `list-destinations`.
+4. `xbridge --workspace <id> run --device "iPhone 18 Pro"`. Omit `--device` when the focused Xcode destination is the one to use. Add `--debugger` only when a debug session is needed. On failure, inspect `issues` and `build-log`.
+5. If there are no taps, swipes, or snapshots to perform, stop. Report workspace id and destination. Do not start a Device Hub session.
+6. If there are UI actions, start a session against the destination already running the app, snapshot, then act with quoted commands (see above). Do not invent behavior.
 
 Do not call `simctl list` or `rocketsim screen` to pick a simulator when `list-destinations` already has it. Snapshot once, then tap from that hierarchy.
 
-> On Xcode 27.0.0, steps 6–7 fail with `Session not found` — this flow hits the [Xcode 27.0.0 Device Hub bug](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact). Follow the workaround recipe there: install via steps 4–5, `kill -9` DeviceHub.app, then interact through a bare `device-session`.
+> On Xcode 27.0.0, interacting with a workspace-bound session fails with `Session not found` — see [Xcode 27.0.0 Device Hub bug](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact). Launch with `run` first, then interact through a bare `device-session`.
 
 ## Troubleshooting
 
