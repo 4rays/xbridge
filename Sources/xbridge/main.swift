@@ -5,7 +5,7 @@ import XbridgeCore
 let extracted = GlobalCLIOptions.extract(from: Array(CommandLine.arguments.dropFirst()))
 let xcodePath = extracted.xcodePath
 let workspace = extracted.workspace
-let args = extracted.remaining
+let args = extracted.remaining + (extracted.debugger ? ["--debugger"] : [])
 
 guard !args.isEmpty else {
   Commands.printHelp()
@@ -70,18 +70,13 @@ guard commandArgs.count >= command.minArgs else {
 }
 
 do {
-  var request = try command.build(commandArgs)
-  if let workspace, request.method == LocalRPCMethod.callTool,
-    let paramsData = try? JSONEncoder().encode(request.params),
-    let params = try? JSONDecoder().decode(CallToolParams.self, from: paramsData)
-  {
-    let injected = params.injectingWorkspace(workspace)
-    let injectedData = (try? JSONEncoder().encode(injected)) ?? Data()
-    let injectedJSON = (try? JSONDecoder().decode(JSONValue.self, from: injectedData)) ?? .null
-    request = LocalRPCRequest(id: request.id, method: request.method, params: injectedJSON)
-  }
   let client = DaemonClient(xcodePath: xcodePath)
 
+  var request = try command.build(commandArgs)
+
+  if let workspace {
+    request = injectWorkspace(workspace, into: request)
+  }
   if request.method == LocalRPCMethod.stop {
     guard Darwin.isatty(STDIN_FILENO) == 1 || commandArgs.contains("--force") else {
       fputs("error: 'stop' requires an interactive terminal; use --force to override\n", stderr)
@@ -98,7 +93,10 @@ do {
     exit(0)
   }
 
-  let response = try client.send(request)
+  let response =
+    try commandName == "run"
+    ? runProject(commandArgs, workspace: workspace, send: { try client.send($0) })
+    : client.send(request)
 
   let output = OutputFormatter.format(response: response, method: request.method)
   print(output)

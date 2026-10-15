@@ -136,7 +136,7 @@ Installs `xbridge`, `xbridged`, and `xbridge-allow` to `~/.local/bin`. Requires 
 | `list-test-plans`                      | List test plans for the active scheme |
 | `switch-test-plan <name>`              | Make a test plan active               |
 | `build`                                | Build the current scheme              |
-| `run`                                  | Build and run the current scheme      |
+| `run [--device <title>] [--debugger]`  | Build and run the current scheme      |
 | `stop-run`                             | Stop the running app                  |
 | `test`                                 | Run all tests                         |
 | `test-run <target> <id>`               | Run a specific test                   |

@@ -254,10 +254,14 @@ enum Commands {
 
   static let runCommand = Command(
     name: "run",
-    usage: "run                       Build and run the current scheme",
+    usage: "run [--device <title>] [--debugger]  Build and run the current scheme",
     minArgs: 0
-  ) { _ in
-    callToolRequest(tool: XcodeTool.runProject, arguments: [:])
+  ) { args in
+    var dict: [String: JSONValue] = [:]
+    if args.contains("--debugger") {
+      dict["attachDebugger"] = .bool(true)
+    }
+    return callToolRequest(tool: XcodeTool.runProject, arguments: .object(dict))
   }
 
   static let stopRunCommand = Command(
