@@ -71,9 +71,9 @@ guard commandArgs.count >= command.minArgs else {
 
 do {
   let client = DaemonClient(xcodePath: xcodePath)
-  let runArgs = try commandName == "run" ? prepareRun(commandArgs, workspace: workspace, client: client) : commandArgs
 
-  var request = try command.build(runArgs)
+  var request = try command.build(commandArgs)
+
   if let workspace {
     request = injectWorkspace(workspace, into: request)
   }
@@ -93,7 +93,10 @@ do {
     exit(0)
   }
 
-  let response = try client.send(request)
+  let response =
+    try commandName == "run"
+    ? runProject(commandArgs, workspace: workspace, send: { try client.send($0) })
+    : client.send(request)
 
   let output = OutputFormatter.format(response: response, method: request.method)
   print(output)
@@ -102,53 +105,4 @@ do {
 } catch {
   fputs("error: \(error.localizedDescription)\n", stderr)
   exit(1)
-}
-
-private func prepareRun(
-  _ args: [String],
-  workspace: String?,
-  client: DaemonClient
-) throws -> [String] {
-  guard let device = try runDevice(from: args) else { return args }
-  var request = try Commands.switchDestinationCommand.build([device])
-  if let workspace {
-    request = injectWorkspace(workspace, into: request)
-  }
-  let switched = try client.send(request)
-  guard switched.ok else {
-    print(OutputFormatter.format(response: switched, method: LocalRPCMethod.callTool))
-    exit(1)
-  }
-  return args.filter { $0 != "--device" && $0 != device }
-}
-
-private func injectWorkspace(_ workspace: String, into request: LocalRPCRequest) -> LocalRPCRequest {
-  guard request.method == LocalRPCMethod.callTool,
-    let paramsData = try? JSONEncoder().encode(request.params),
-    let params = try? JSONDecoder().decode(CallToolParams.self, from: paramsData)
-  else { return request }
-  let injected = params.injectingWorkspace(workspace)
-  let injectedData = (try? JSONEncoder().encode(injected)) ?? Data()
-  let injectedJSON = (try? JSONDecoder().decode(JSONValue.self, from: injectedData)) ?? .null
-  return LocalRPCRequest(id: request.id, method: request.method, params: injectedJSON)
-}
-
-private func runDevice(from args: [String]) throws -> String? {
-  guard let index = args.firstIndex(of: "--device") else { return nil }
-  let valueIndex = args.index(after: index)
-  guard valueIndex < args.endIndex, !args[valueIndex].hasPrefix("--") else {
-    throw RunFlagError.missingDevice
-  }
-  return args[valueIndex]
-}
-
-private enum RunFlagError: LocalizedError {
-  case missingDevice
-
-  var errorDescription: String? {
-    switch self {
-    case .missingDevice:
-      return "'run --device' requires a destination title"
-    }
-  }
 }

@@ -1,4 +1,5 @@
 import Testing
+
 @testable import XbridgeCore
 
 @Suite("GlobalCLIOptions")
@@ -67,6 +68,22 @@ struct GlobalCLIOptionsTests {
     #expect(after.debugger)
     #expect(after.workspace == "workspace1")
     #expect(after.remaining == ["run"])
+  }
+
+  @Test(
+    "Preserves literal debugger arguments for non-run commands",
+    arguments: [
+      ["grep", "--debugger", "Sources"],
+      ["update", "file.txt", "--debugger", "replacement"],
+      ["update", "file.txt", "--debugger", "--debugger"],
+      ["write", "file.txt", "--debugger"],
+      ["exec", "file.swift", "--debugger", "print(1)"],
+      ["--debugger", "grep", "Sources"]
+    ])
+  func preservesNonRunDebugger(arguments: [String]) {
+    let result = GlobalCLIOptions.extract(from: arguments)
+    #expect(!result.debugger)
+    #expect(result.remaining == arguments)
   }
 
   @Test("Leaves a later --workspace used as a positional after stripping the first")

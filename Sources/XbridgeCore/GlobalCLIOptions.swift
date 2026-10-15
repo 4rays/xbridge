@@ -1,6 +1,6 @@
 /// Global flags that must appear before the command name, plus
 /// `--workspace` which may also appear among command arguments.
-/// `--debugger` is a `run` flag and is stripped wherever it appears.
+/// `--debugger` is stripped only for `run`.
 public enum GlobalCLIOptions {
   public struct Extracted: Sendable {
     public let xcodePath: String?
@@ -11,7 +11,9 @@ public enum GlobalCLIOptions {
 
   /// Parses `--xcode-path <path>` from the option prefix only.
   /// Later occurrences stay in `remaining` as positional arguments.
-  public static func extractXcodePath(from arguments: [String]) -> (path: String?, remaining: [String]) {
+  public static func extractXcodePath(from arguments: [String]) -> (
+    path: String?, remaining: [String]
+  ) {
     let extracted = extract(from: arguments)
     return (extracted.xcodePath, extracted.remaining)
   }
@@ -19,6 +21,13 @@ public enum GlobalCLIOptions {
   /// Parses `--xcode-path` from the prefix and `--workspace` from prefix or
   /// among remaining arguments.
   public static func extract(from arguments: [String]) -> Extracted {
+    let extracted = extract(from: arguments, recognizesDebugger: true)
+
+    return extracted.remaining.first == "run"
+      ? extracted : extract(from: arguments, recognizesDebugger: false)
+  }
+
+  private static func extract(from arguments: [String], recognizesDebugger: Bool) -> Extracted {
     var index = arguments.startIndex
     var xcodePath: String?
     var workspace: String?
@@ -26,7 +35,8 @@ public enum GlobalCLIOptions {
 
     while index < arguments.endIndex {
       let argument = arguments[index]
-      if argument == "--debugger" {
+
+      if recognizesDebugger, argument == "--debugger" {
         debugger = true
         index = arguments.index(after: index)
         continue
@@ -54,15 +64,20 @@ public enum GlobalCLIOptions {
       workspace = stripped.workspace
       remaining = stripped.remaining
     }
-    if remaining.contains("--debugger") {
+
+    if recognizesDebugger, remaining.contains("--debugger") {
       debugger = true
       remaining.removeAll { $0 == "--debugger" }
     }
-    return Extracted(xcodePath: xcodePath, workspace: workspace, debugger: debugger, remaining: remaining)
+
+    return Extracted(
+      xcodePath: xcodePath, workspace: workspace, debugger: debugger, remaining: remaining)
   }
 
   /// Removes a `--workspace <id>` pair from command arguments.
-  public static func stripWorkspace(from arguments: [String]) -> (workspace: String?, remaining: [String]) {
+  public static func stripWorkspace(from arguments: [String]) -> (
+    workspace: String?, remaining: [String]
+  ) {
     var workspace: String?
     var remaining: [String] = []
     remaining.reserveCapacity(arguments.count)

@@ -33,7 +33,7 @@ let package = Package(
     ),
     .testTarget(
       name: "xbridgeTests",
-      dependencies: ["XbridgeCore"],
+      dependencies: ["XbridgeCore", "xbridge"],
       path: "Tests/xbridgeTests"
     )
   ],
