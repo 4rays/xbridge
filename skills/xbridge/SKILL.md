@@ -187,7 +187,7 @@ Commands most likely to need a timeout: `build`, `run`, `test`, `test-run`, `bui
 
 `device-start` / `device-install` take `--workspace` when several workspaces are open. `device-session`, `device-end`, and `device-interact` do not.
 
-Device Hub is only for taps, swipes, and snapshots. Launch with `xbridge run`. Do not open a session to install or run the app.
+Use Device Hub for taps, swipes, snapshots, and launch-only activate of an already installed app. Build and run with `xbridge run`. On Xcode 27.0.0, do not open a workspace-bound session to install or run the app.
 
 ### Advanced
 
@@ -275,7 +275,18 @@ xbridge docs "SwiftUI List" SwiftUI
 
 ### Run on a simulator
 
-Use `run` to build and launch. Do not use Device Hub, RocketSim, or `simctl install`/`launch` for this. Do not search DerivedData for `.app` bundles.
+Classify the request before choosing a command:
+
+- Launch an already installed app, with no fresh build → skip `device-install` and `run`. Activate with a quoted wait and the project's bundle ID (see [Drive a simulator](#drive-a-simulator-device-hub)).
+- Build and run, reinstall, or run latest changes → `run`. On Xcode 27.0.0, do not use `device-start` + `device-install` to launch (see [Xcode 27.0.0 Device Hub bug](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact)).
+
+Do not use RocketSim or `simctl install`/`launch`. Do not search DerivedData for `.app` bundles. Do not silently rebuild or install when a launch-only activate fails.
+
+Resolve the destination from the request:
+
+- A destination `displayTitle`, simulator name, or UDID → pass that title to `--device` only if it already appears in `list-destinations`. Do not create or clone simulators with `simctl`.
+- Focused simulator or the currently selected Xcode destination → omit `--device`.
+- Destination not specified → ask whether to use the currently selected Xcode destination or a named one from `list-destinations`. Do not pick one silently.
 
 ```bash
 xbridge list-workspaces
@@ -284,13 +295,15 @@ xbridge --workspace workspace1 run --device "iPhone 18 Pro" --debugger
 xbridge --workspace workspace1 console
 ```
 
-`--device` takes a `displayTitle` from `list-destinations`. Omit it to use the destination already selected in Xcode. On failure, inspect `issues` and `build-log`.
+`--device` takes a `displayTitle` from `list-destinations`. Omit it to use the destination already selected in Xcode. On failure, inspect `issues` and `build-log`, report the failure, and stop. Do not bypass a failed `run` or `device-install` with `xcodebuild` or `simctl`.
 
 ### Drive a simulator (Device Hub)
 
-Open a Device Hub session only when the task needs a tap, swipe, or snapshot. If it only needs the app running, stop after `run`.
+Open a Device Hub session when the task needs a tap, swipe, snapshot, or a launch-only activate of an already installed app. If a build-and-run only needs the app running, stop after `run`.
 
 Quote every interaction command as **one** shell argument. `device-interact` takes `<key> [command] [bundle-id]`; an unquoted `t 100 200` becomes command `t` and bundle ID `100`.
+
+Build and run, then open a bare session for taps. Launch-only skips `run` and activates on that session instead:
 
 ```bash
 xbridge list-workspaces
@@ -308,7 +321,15 @@ xbridge device-interact "Verify Login Flow" "t 242 822"
 xbridge device-end "Verify Login Flow"
 ```
 
-If the app is backgrounded after launch (`applicationState: RunningInBackground`), activate it:
+Launch-only activate uses the project's bundle ID as the third argument and a quoted wait, not `device-install` or `run`:
+
+```bash
+xbridge device-interact "Verify Login Flow" "w 1" com.example.App
+```
+
+`NotRun` after that wait means this activate did not show the app running. Do not treat it as proof the app is absent unless that was verified another way. Stop and tell the user. Do not silently rebuild or install.
+
+If the app is backgrounded after launch (`applicationState: RunningInBackground`), activate it by passing the same bundle ID:
 
 ```bash
 xbridge device-interact "Verify Login Flow" "t 242 822" com.example.App
@@ -347,7 +368,7 @@ After each interact, read `applicationState` and the new hierarchy. Confirm the 
 
 #### Session rules
 
-- Launch with `run`, then use `device-session` against the same destination for taps, swipes, or snapshots. Do not use `device-start` + `device-install` to launch. On Xcode 27.0.0, workspace-bound sessions also cannot be interacted with or ended (see [Xcode 27.0.0 Device Hub bug](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact)).
+- Build and run with `run`, then use `device-session` against the same destination for taps, swipes, or snapshots. For an already installed app, skip `run` and `device-install` and activate with `device-interact` using a quoted `w 1` and the project's bundle ID. On Xcode 27.0.0, do not use `device-start` + `device-install` to launch: workspace-bound sessions also cannot be interacted with or ended (see [Xcode 27.0.0 Device Hub bug](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact)). If `device-install` is used and fails, inspect `issues` and `build-log`, report the failure, and stop. Do not bypass it with `xcodebuild` or `simctl`.
 - `sessionIdentifier` is a Title Case label (`Verify Login Flow`). It becomes `interactionSessionKey`.
 - `deviceIdentifier` accepts a destination `displayTitle` from `list-destinations`, a simulator name, or a UDID.
 - End the session with `device-end` as soon as the flow is done. Keeping it open is expensive.
@@ -359,14 +380,15 @@ After each interact, read `applicationState` and the new hierarchy. Confirm the 
 
 1. `xbridge status` until `bridge : healthy` and `xcode : open`. Open the project with `open-workspace` if needed.
 2. `xbridge list-workspaces` — pick the entry whose path is inside the repo root. Pass `--workspace <id>` when more than one is open.
-3. `list-schemes` / `list-destinations`. Do not `simctl clone` unless the named simulator is missing from `list-destinations`.
-4. `xbridge --workspace <id> run --device "iPhone 18 Pro"`. Omit `--device` when the focused Xcode destination is the one to use. Add `--debugger` only when a debug session is needed. On failure, inspect `issues` and `build-log`.
-5. If there are no taps, swipes, or snapshots to perform, stop. Report workspace id and destination. Do not start a Device Hub session.
-6. If there are UI actions, start a session against the destination already running the app, snapshot, then act with quoted commands (see above). Do not invent behavior.
+3. `list-schemes` / `list-destinations`. Use an explicit destination title, simulator name, or UDID only if it already appears there. Omit `--device` for the focused or currently selected Xcode destination. If the destination was not specified, ask whether to use the selected destination or a named one from `list-destinations`. Do not `simctl clone` unless the named simulator is missing from `list-destinations`.
+4. If the request is launch-only, skip this step. Otherwise `xbridge --workspace <id> run --device "iPhone 18 Pro"`. Omit `--device` when the focused Xcode destination is the one to use. Add `--debugger` only when a debug session is needed. On failure, inspect `issues` and `build-log`, report the failure, and stop. Do not fall back to `xcodebuild` or `simctl`.
+5. If there are no taps, swipes, snapshots, or launch-only activate to perform, stop. Do not start a Device Hub session.
+6. If there are UI actions, or the request is launch-only, start a session against the destination, snapshot or activate, then act with quoted commands (see above). Launch-only activate is `device-interact "<session>" "w 1" <bundle-id>`. Do not invent behavior. Do not silently rebuild or install if that activate fails.
+7. End the session with `device-end` as soon as the flow is done, then report.
 
 Do not call `simctl list` or `rocketsim screen` to pick a simulator when `list-destinations` already has it. Snapshot once, then tap from that hierarchy.
 
-> On Xcode 27.0.0, interacting with a workspace-bound session fails with `Session not found` — see [Xcode 27.0.0 Device Hub bug](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact). Launch with `run` first, then interact through a bare `device-session`.
+> On Xcode 27.0.0, interacting with a workspace-bound session fails with `Session not found` — see [Xcode 27.0.0 Device Hub bug](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact). For build-and-run, launch with `run` first, then interact through a bare `device-session`. Launch-only still skips `run`.
 
 ## Troubleshooting
 
@@ -401,7 +423,7 @@ Those are English labels, not parser verbs. Use `t x y`, `t x1 y1 f x2 y2`, `sen
 Xcode's Device Hub idle store expired the session (~120s, gone by ~180s) or it was ended. `device-session` again. Pauses under two minutes are fine. If the key was workspace-bound on Xcode 27.0.0, restarting the session will not help — use the [Device Hub bug recipe](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact).
 
 **`applicationState: NotRun` or `RunningInBackground`**
-For `NotRun`, launch with `run`. For `RunningInBackground`, pass the bundle ID as the third `device-interact` argument to activate the app.
+For `RunningInBackground`, or a launch-only request, pass the project's bundle ID as the third `device-interact` argument. Launch-only activate is a quoted `w 1` plus that bundle ID. Do not treat `NotRun` after that wait as proof the app is absent unless verified another way, and do not silently rebuild or install. For a build-and-run request that has not launched yet, use `run`.
 
 **`Unsupported command. Ensure the session device matches the expected platform`**
 Crown (`c`) and some hardware (`r`, some `b` names) are not for iPhone. Use `t` / `drag` / `orientation`.
@@ -428,7 +450,16 @@ xbridge device-session "iPhone 18 Pro" "Bare"
 xbridge device-interact "Bare" "t 242 822"
 ```
 
-`device-session`, `device-interact`, and `device-end` never take `--workspace`. Keep the launch-first flow (`run` → `device-session` → `device-interact` → `device-end`) after Xcode ships a fix.
+`device-session`, `device-interact`, and `device-end` never take `--workspace`. Keep the build-and-run flow (`run` → `device-session` → `device-interact` → `device-end`) after Xcode ships a fix. A launch-only request still skips `run` and `device-install`.
+
+## Reporting back
+
+After a simulator launch or Device Hub flow, report:
+
+- Launch-only activate versus install/run, and whether it succeeded or failed.
+- Workspace id, scheme, and destination title.
+- Session name, when a session was started.
+- When UI actions or verification were requested, the interact commands that ran and the observed `applicationState` and selected control (or screen title) afterward.
 
 ## Project Context
 
