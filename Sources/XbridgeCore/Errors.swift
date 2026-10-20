@@ -39,7 +39,9 @@ extension XbridgeError: LocalizedError {
     case .writeFailed:
       return "Failed to write to bridge"
     case .awaitingPermission:
-      return "Xcode is waiting for permission. Click Allow in the Xcode dialog, then re-run the command."
+      return
+        "Xcode is waiting for permission. Run xbridge status --fix for pending requests and approval instructions, ask the user to approve in their terminal, then re-run the command."
+
     case .xcodeUnavailable:
       return "Xcode isn't reachable. Make sure Xcode is open with a project and MCP is enabled."
     }

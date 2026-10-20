@@ -4,8 +4,7 @@ enum StatusRepairError: LocalizedError {
   case usage
   case invalidProject(String)
   case workspaceID
-  case missingHelper(String)
-  case refused(String)
+  case statusFailed(String)
 
   var errorDescription: String? {
     switch self {
@@ -13,13 +12,13 @@ enum StatusRepairError: LocalizedError {
     case .invalidProject(let path): "Project root is not a directory: \(path)"
     case .workspaceID:
       "status --fix needs a project root, not a workspace ID; use --project <project-root>"
-    case .missingHelper(let path): "xbridge-allow is missing alongside xbridge: \(path)"
-    case .refused(let message): "Access repair refused: \(message)"
+
+    case .statusFailed(let message): "Cannot read Xcode MCP server status: \(message)"
     }
   }
 }
 
-/// UI repair runs in the user-facing CLI, never in the background daemon.
+/// Read-only permission discovery. Approval is left to the user in their terminal.
 enum StatusRepair {
   static func projectPath(from args: [String]) throws -> String {
     let path: String
@@ -41,32 +40,45 @@ enum StatusRepair {
     return normalized
   }
 
-  static func allow(projectPath: String) throws -> String {
-    let cli = (Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0]))
-      .resolvingSymlinksInPath()
-    let helper = cli.deletingLastPathComponent().appendingPathComponent("xbridge-allow")
-    guard FileManager.default.isExecutableFile(atPath: helper.path) else {
-      throw StatusRepairError.missingHelper(helper.path)
+  static func status(xcodePath: String?) throws -> String {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+    process.arguments = ["mcp-server", "status", "--format", "json"]
+
+    if let xcodePath {
+      var environment = ProcessInfo.processInfo.environment
+      environment["DEVELOPER_DIR"] = xcodePath
+      process.environment = environment
     }
 
-    let process = Process()
-    process.executableURL = helper
-    process.arguments = ["--allow", projectPath]
     let stdout = Pipe()
-    let stderr = Pipe()
     process.standardOutput = stdout
-    process.standardError = stderr
     try process.run()
     let output =
       String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-    let error =
-      String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+
     process.waitUntilExit()
     guard process.terminationStatus == 0 else {
-      throw StatusRepairError.refused(
-        "\(projectPath): \(error.trimmingCharacters(in: .whitespacesAndNewlines))"
+      throw StatusRepairError.statusFailed(
+        "xcrun mcp-server exited with status \(process.terminationStatus). Requires Xcode 27 or later."
       )
     }
     return output.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  static func instructions(projectPath: String) -> String {
+    """
+    No permissions were changed. Ask the user to run approval commands in their terminal.
+    From the status above, verify the pending agent is the intended xbridged executable
+    and the pending folder is the intended project (project root: \(projectPath)).
+    Replace <request-id> with each matching pending request's ID, then run:
+
+      sudo xcrun mcp-server approve <request-id> --for-24-hours
+
+    Agent and folder requests may need separate approvals. Re-read status after each approval.
+    --always is available only for signed agents and folders, not unsigned agents.
+    If no matching request is pending, run open-workspace for the intended project first.
+    After approval, retry the original workspace operation to confirm access.
+    """
   }
 }

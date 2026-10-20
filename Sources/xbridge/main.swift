@@ -23,7 +23,7 @@ if commandName == "--help" || commandName == "-h" || commandName == "help" {
 
 // Handle version
 if commandName == "--version" || commandName == "-v" || commandName == "version" {
-  print("xbridge 0.9.6")
+  print("xbridge 0.9.7")
   exit(0)
 }
 
@@ -41,11 +41,25 @@ if commandName == "skill" {
   }
 }
 
-if commandName == "status", !commandArgs.isEmpty {
+if commandName == "status" {
   do {
-    guard workspace == nil else { throw StatusRepairError.workspaceID }
-    let projectPath = try StatusRepair.projectPath(from: commandArgs)
-    print(try StatusRepair.allow(projectPath: projectPath))
+    let projectPath: String?
+
+    if commandArgs.isEmpty {
+      projectPath = nil
+    } else {
+      guard workspace == nil else { throw StatusRepairError.workspaceID }
+      projectPath = try StatusRepair.projectPath(from: commandArgs)
+    }
+
+    print("Xcode MCP server (xcrun mcp-server status --format json):")
+    print(try StatusRepair.status(xcodePath: xcodePath))
+
+    if let projectPath {
+      print("\n" + StatusRepair.instructions(projectPath: projectPath))
+      exit(0)
+    }
+
     let response = try DaemonClient(xcodePath: xcodePath).send(
       LocalRPCRequest(method: LocalRPCMethod.status)
     )

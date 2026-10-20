@@ -202,8 +202,8 @@ V1 does not need a complete generic MCP abstraction. It only needs enough to tal
 3. CLI starts `xcode-toolsd`
 4. Daemon launches `xcrun mcpbridge`
 5. Daemon initializes MCP
-6. Xcode prompts for permission
-7. User clicks Allow
+6. Xcode requests agent and folder permission
+7. CLI reads `xcrun mcp-server status --format json`; the human approves verified pending request IDs with `sudo xcrun mcp-server approve <request-id> --for-24-hours`
 8. Subsequent CLI calls reuse the same daemon-managed connection
 
 ### Normal Run

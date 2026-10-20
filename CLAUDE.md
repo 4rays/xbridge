@@ -26,7 +26,8 @@
 
 - Tool names are PascalCase: `XcodeListWorkspaces`, `BuildProject`, `XcodeGrep`, etc.
 - Xcode 27 dropped `tabIdentifier` / `XcodeListWindows`. Tools take an optional `workspaceIdentifier` (`xbridge --workspace <id> …`). Required when more than one workspace is open.
-- First contact with a project is `XcodeOpenWorkspace`. That is what asks the user to Allow the agent; the grant is 24 hours per agent + project. There is no way to make it permanent.
+- First contact with a project is `XcodeOpenWorkspace`. Inspect agent/folder grants and pending requests with `xcrun mcp-server status --format json` (Xcode 27+). `xbridge status` includes this native status; `status --fix` prints it and human approval instructions without contacting the daemon.
+- Approval is a human-run `sudo xcrun mcp-server approve <request-id> --for-24-hours`. Unsigned agents cannot use `--always`; signed agents and folders can. Never automate sudo or use Accessibility traversal to click approval. Verify executable/folder paths and re-read status after each approval.
 - Health probe is `XcodeListWorkspaces` (no args, no side effects).
 - Run `xbridge tools` to see the live list from the bridge
 - Run `xbridge tool-schema <name>` to inspect argument schemas

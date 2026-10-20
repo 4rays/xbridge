@@ -7,7 +7,7 @@ description: "Use when working with Xcode projects — building, testing, readin
 
 This skill enables AI agents to interact with Xcode projects via the **xbridge CLI**.
 
-> **Xcode must be running.** xbridge communicates with Xcode directly — if Xcode is not open with a project loaded, every command will fail. Before proceeding, confirm Xcode is running and a project is open. If it's not, open it:
+> **An Xcode MCP server must be available for project commands.** On Xcode 27+, `xcrun mcp-server status --format json` reports the server, permissions, pending requests, and open workspaces without Accessibility traversal. `xbridge status` includes this native status. `xbridge status --fix` reads it without contacting the daemon and prints approval instructions; it does not grant access or run sudo. The GUI need not be open if headless mode is already enabled. Otherwise, open Xcode with the project:
 >
 > ```bash
 > open -a Xcode          # opens Xcode without a project
@@ -21,7 +21,7 @@ This skill enables AI agents to interact with Xcode projects via the **xbridge C
 > ls /Applications/Xcode*.app
 > ```
 >
-> If the bridge shows as unhealthy, ensure Xcode is open with a project and MCP is enabled in **Xcode > Settings > Intelligence**.
+> If the bridge shows as unhealthy, inspect native status first. For GUI use, ensure Xcode is open with a project and MCP is enabled in **Xcode > Settings > Intelligence**.
 
 ## Setup
 
@@ -53,7 +53,7 @@ If the output indicates the bridge is not running, tell the user:
 > xbridge status
 > ```
 >
-> If the bridge shows as `awaiting-permission` or a command hangs on first contact, Xcode Service may be showing **Allow an unknown agent (xbridge) to access <project>?**. Use [Remote Allow](#remote-allow-accessibility). Do not wait for a human unless that click fails.
+If the bridge shows as `awaiting-permission`, a command returns `WAITING_FOR_PERMISSION`, or first contact hangs, use [Native permission approval](#native-permission-approval). Give the human the exact approval command for each verified pending request and wait for confirmation. Do not traverse Accessibility or click an Allow button.
 
 If found and bridge is running, skip to [Using xbridge](#using-xbridge).
 
@@ -79,8 +79,8 @@ Then open your project in Xcode and proceed to [Using xbridge](#using-xbridge).
 ### Prerequisites
 
 - xbridge installed (`brew install xbridge` via the `4rays/tap` tap)
-- Xcode running with a project open
-- Xcode MCP enabled in **Xcode > Settings > Intelligence > Model Context Protocol**
+- Xcode 27+ MCP server available, with the intended project open
+- Xcode MCP enabled in **Xcode > Settings > Intelligence > Model Context Protocol**, or headless mode already enabled
 
 ### Workspaces
 
@@ -103,7 +103,7 @@ If no workspace is open, open one first — that is also what triggers the Allow
 xbridge open-workspace /path/to/MyApp.xcodeproj
 ```
 
-Xcode 27’s Allow grant lasts **24 hours per agent and project**. There is no permanent option. After it expires, `open-workspace` again and click Allow.
+Agent and folder permissions are separate. Unsigned agents can be approved for **24 hours**; signed agents and folders also support `--always`. After expiry, `open-workspace` again and follow [Native permission approval](#native-permission-approval).
 
 ### Timeouts
 
@@ -123,7 +123,8 @@ Commands most likely to need a timeout: `build`, `run`, `test`, `test-run`, `bui
 
 | Command          | Description                   |
 | ---------------- | ----------------------------- |
-| `xbridge status` | Show daemon and bridge status |
+| `xbridge status` | Show native MCP permissions/workspaces and daemon/bridge health |
+| `xbridge status --fix [--project <path>]` | Show native status and human approval instructions; read-only, no daemon needed |
 
 ### Discovery
 
@@ -378,7 +379,7 @@ After each interact, read `applicationState` and the new hierarchy. Confirm the 
 
 ### Local simulator run (replaces sim-bridge)
 
-1. `xbridge status` until `bridge : healthy` and `xcode : open`. Open the project with `open-workspace` if needed.
+1. `xbridge status` until `bridge : healthy`; inspect native status for server availability and the intended workspace. Open the project with `open-workspace` if needed.
 2. `xbridge list-workspaces` — pick the entry whose path is inside the repo root. Pass `--workspace <id>` when more than one is open.
 3. `list-schemes` / `list-destinations`. Use an explicit destination title, simulator name, or UDID only if it already appears there. Omit `--device` for the focused or currently selected Xcode destination. If the destination was not specified, ask whether to use the selected destination or a named one from `list-destinations`. Do not `simctl clone` unless the named simulator is missing from `list-destinations`.
 4. If the request is launch-only, skip this step. Otherwise `xbridge --workspace <id> run --device "iPhone 18 Pro"`. Omit `--device` when the focused Xcode destination is the one to use. Add `--debugger` only when a debug session is needed. On failure, inspect `issues` and `build-log`, report the failure, and stop. Do not fall back to `xcodebuild` or `simctl`.
@@ -396,25 +397,25 @@ Do not call `simctl list` or `rocketsim screen` to pick a simulator when `list-d
 Install with `brew tap 4rays/tap && brew install xbridge`.
 
 **`xbridge status` shows bridge down or unhealthy**
-Ensure Xcode is open with a project and MCP is enabled in **Xcode > Settings > Intelligence > Model Context Protocol**. The daemon auto-starts and retries on the next command.
+Inspect `xcrun mcp-server status --format json` for server availability, permissions, pending requests, and workspaces. For GUI use, ensure Xcode is open with a project and MCP is enabled in **Xcode > Settings > Intelligence > Model Context Protocol**. The daemon auto-starts and retries on the next project command.
 
 **Command returns `WAITING_FOR_PERMISSION`**
-Xcode Service may be showing the xbridge access prompt. Use [Remote Allow](#remote-allow-accessibility), then re-run the same command. The daemon retries automatically once permission is granted.
+Use [Native permission approval](#native-permission-approval), ask the human to run the exact sudo command, wait for confirmation, then re-run the same command.
 
 **Grant expired / “isn't approved to use Xcode's tools yet”**
-Xcode 27’s Allow grant lasts 24 hours per agent and project. Run `xbridge open-workspace /path/to/MyApp.xcodeproj` again and click Allow. There is no permanent option.
+Run `xbridge open-workspace /path/to/MyApp.xcodeproj` again and follow [Native permission approval](#native-permission-approval). Unsigned agents require 24-hour approval; durable trust is available only for signed agents and folders.
 
 **`workspaceIdentifier is required`**
 More than one workspace is open. Pass `--workspace <id>` from `xbridge list-workspaces`.
 
 **No workspaces from `xbridge list-workspaces`**
-Xcode must be running with a project open. Run `xbridge open-workspace MyApp.xcodeproj` first.
+Run `xbridge open-workspace MyApp.xcodeproj` first. Native status also lists open workspaces, including when the server is headless.
 
 **Xcode MCP not enabled**
 Go to **Xcode > Settings > Intelligence > Model Context Protocol** and enable Xcode Tools.
 
 **MCP permission denied**
-In Xcode Settings, revoke the process entry under MCP. The next tool command will trigger a fresh permission dialog — click **Allow** via [Remote Allow](#remote-allow-accessibility).
+Inspect native status and follow [Native permission approval](#native-permission-approval). Do not clear permissions or revoke unrelated grants as a repair shortcut.
 
 **`Invalid command: 'tap'` (or `swipe`, `type`, `home`)**
 Those are English labels, not parser verbs. Use `t x y`, `t x1 y1 f x2 y2`, `sender keyboard kbd <text>`, `b h`. Quote the whole command as one argument.
@@ -483,19 +484,28 @@ Add an `AGENTS.md` or `CLAUDE.md` in your project root:
 - Tests in: Tests/
 ```
 
-## Remote Allow (Accessibility)
+## Native permission approval
 
-The observed Xcode 27 prompt is an `AXDialog` owned by **Xcode Service**, with an `AXHostingView` containing the headline, explanation, project path, and two **unlabeled** `AXButton` elements. The upper button is visibly **Allow for 24 Hours**; the lower is **Don’t Allow**. Do not search for `button "Allow"` on the main Xcode process.
-
-Use the fail-closed helper (requires Accessibility permission for the terminal/agent host):
+Use Xcode 27's permission-management CLI, not UI automation:
 
 ```bash
-xbridge-allow                               # read-only inspection
-xbridge status --fix --project /path/to/root # verifies project path, presses upper button once
+xcrun mcp-server status --format json
+# Or native status plus instructions, without contacting the xbridge daemon:
+xbridge status --fix --project /path/to/root
 ```
 
-`xbridge status --fix` defaults to the current working directory as the expected project root; specify `--project` when elsewhere. From a source checkout, use `osascript scripts/allow-xcode-access.applescript --allow /path/to/root` instead. `xbridge-allow --allow` without a project path refuses to click.
+Read the pending requests and existing grants. Verify the pending agent's executable path is the intended `xbridged` installation and the pending folder is the intended project root. Do not approve a request based only on its display name. `--project` adds context for review; it does not filter requests or change permissions.
 
-The helper requires exactly one matching xbridge prompt and checks its text, hierarchy, button count, and layout. If the prompt differs, **do not click by index**; inspect the actual hierarchy and visible dialog before changing the helper. Confirm disappearance and retry the original bridge operation (a healthy `xbridge status` alone may concern a different workspace). Never walk `entire contents` of Xcode; it can hang.
+If no matching request is pending, run `xbridge open-workspace /path/to/MyApp.xcodeproj` to request access, then read native status again. Agent and folder requests may need separate approvals and may appear in sequence.
 
-If AppleScript cannot see or click the dialog, the **hosting process** lacks Accessibility — Terminal, Ghostty, iTerm, the agent app, or whatever launched `osascript`. Ask the developer to enable it in **System Settings → Privacy & Security → Accessibility** for that app, then retry the click. Until that is granted, a human has to click **Allow** in Xcode.
+For each verified pending request, replace `<request-id>` with its actual ID and **give the human the exact command to run in their terminal**:
+
+```bash
+sudo xcrun mcp-server approve <request-id> --for-24-hours
+```
+
+Do not run sudo, request a password, configure passwordless sudo, or click an Allow dialog. Wait for the human's confirmation, re-read native status, and repeat only for a matching remaining request. Then retry the original workspace operation to confirm project access; global bridge health alone does not prove access to that project.
+
+`--always` grants durable trust only to **signed agents and folders**. Unsigned agents, such as an unsigned `xbridged`, must use `--for-24-hours`. Offer durable trust only when the human wants it and the request supports it. Do not use `--unsafe-always-allow-all-agents`, clear all permissions, or broaden folder access to avoid approval.
+
+If `--xcode-path` selects a different Xcode, use the same `DEVELOPER_DIR` for native status and the human's approval command. If `mcp-server` is unavailable, report that Xcode 27+ is required for native permission management. Do not fall back to Accessibility traversal.

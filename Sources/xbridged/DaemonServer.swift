@@ -136,7 +136,13 @@ actor DaemonServer {
   private func handleRelink(id: String) async -> LocalRPCResponse {
     do {
       try await mcpClient.relink()
-      return .success(id: id, result: ["message": "Relinked. If Xcode showed a permission prompt, ask the user to click Allow before continuing."])
+
+      return .success(
+        id: id,
+        result: [
+          "message":
+            "Relinked. If access is pending, run xbridge status --fix and ask the user to approve in their terminal."
+        ])
     } catch XbridgeError.xcodeUnavailable {
       return .failure(id: id, code: "XCODE_UNAVAILABLE", message: XbridgeError.xcodeUnavailable.localizedDescription)
     } catch {
@@ -179,8 +185,9 @@ actor DaemonServer {
       let result = try await mcpClient.callTool(name: params.tool, arguments: params.arguments)
       return .success(id: request.id, result: result)
     } catch XbridgeError.awaitingPermission {
-      return .failure(id: request.id, code: "WAITING_FOR_PERMISSION",
-        message: "Xcode is waiting for permission. Click Allow in the Xcode dialog, then re-run the command.")
+      return .failure(
+        id: request.id, code: "WAITING_FOR_PERMISSION",
+        message: XbridgeError.awaitingPermission.localizedDescription)
     } catch XbridgeError.xcodeUnavailable {
       return .failure(id: request.id, code: "XCODE_UNAVAILABLE",
         message: "Xcode isn't reachable. Make sure Xcode is open with a project and MCP is enabled.")

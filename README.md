@@ -1,6 +1,6 @@
 # xbridge
 
-A daemonized CLI that keeps a single long-lived connection to Xcode's MCP bridge, so Xcode only prompts for permission once per daemon session.
+A daemonized CLI that keeps a single long-lived connection to Xcode's MCP bridge and reuses the daemon's agent identity across commands.
 
 ## Install
 
@@ -88,21 +88,28 @@ xbridge skill                               # print bundled agent instructions
 
 `--workspace <id>` is required when more than one workspace is open. Omit it when only one project is loaded.
 
-Xcode 27 asks you to Allow the agent the first time a project is opened via `open-workspace`. That grant lasts 24 hours per agent and project. There is no permanent option.
+Xcode 27 manages agent and folder permissions separately. Unsigned agents can be approved for 24 hours; signed agents and folders also support durable approval with `--always`.
 
 The daemon starts automatically on first use. Xcode may ask for permission the first time the daemon connects to the bridge.
 
-For an Xcode 27 access prompt, run the repair from the **project root** (the directory shown in the dialog):
+Inspect native Xcode MCP permissions and pending requests without Accessibility access:
 
 ```bash
-xbridge status                                  # read-only bridge health
-xbridge status --fix                            # allow only if dialog path equals current directory
-xbridge status --fix --project /path/to/project  # explicit project root from elsewhere
+xbridge status                                  # native MCP status plus daemon/bridge health
+xbridge status --fix                            # native status and human approval instructions
+xbridge status --fix --project /path/to/project  # include the intended project root for review
+xcrun mcp-server status --format json            # native status alone (no xbridge daemon)
 ```
 
-The underlying `xbridge-allow` helper is also available for inspection (`xbridge-allow`) or a guarded click (`xbridge-allow --allow /path/to/project`). From a source checkout, use `osascript scripts/allow-xcode-access.applescript [--allow /path/to/project]` instead.
+`status --fix` is read-only: it does not click UI, invoke sudo, start the daemon, or grant access. It shows Apple's status JSON, including permissions, pending requests, and open workspaces. `--project` identifies the intended project for human review; it does not filter or approve requests. If no matching request is pending, run `xbridge open-workspace /path/to/MyApp.xcodeproj` first.
 
-Repair matches the `xbridge` prompt in **Xcode Service** (not the main Xcode process), requires its project path to match exactly, checks the dialog text and two-button layout, and refuses to click if the structure changes or more than one prompt matches. In the observed SwiftUI dialog the buttons expose no Accessibility labels; the **upper** button is “Allow for 24 Hours.” The terminal running the CLI needs macOS Accessibility permission. `status --fix` does not discover grants or create a prompt: first run the workspace operation that requests access. It rechecks global bridge health after clicking; retry the original workspace operation to confirm project access.
+Verify each pending request's executable or folder path, then ask the human to run the matching command in their terminal with the actual request ID:
+
+```bash
+sudo xcrun mcp-server approve <request-id> --for-24-hours
+```
+
+Agent and folder requests may require separate approvals. Re-read status after each approval, then retry the original workspace operation to confirm access. Use `--always` only for a signed agent or folder when durable trust is intended; unsigned agents do not support it. Do not enable `--unsafe-always-allow-all-agents` to bypass approval. If using `--xcode-path`, select the same Xcode via `DEVELOPER_DIR` for manual `xcrun` commands.
 
 To manage the daemon manually:
 
@@ -118,7 +125,7 @@ xbridge stop      # shut down the daemon
 make install
 ```
 
-Installs `xbridge`, `xbridged`, and `xbridge-allow` to `~/.local/bin`. Requires Swift 6.3+ and Xcode 26+.
+Installs `xbridge` and `xbridged` to `~/.local/bin` and the bundled skill to `~/.local/share/xbridge`. Removes the obsolete `xbridge-allow` helper from that bin directory. Requires Swift 6.3+ and Xcode 27+ for native permission status.
 
 ## Commands
 
@@ -188,7 +195,7 @@ Running the test while its owning scheme is active is also a reliable fallback.
 
 `xbridged` owns the only connection to Xcode's MCP bridge. It handles tool discovery and request correlation. The CLI connects to the daemon over a Unix domain socket at `~/Library/Application Support/xbridge/daemon.sock`.
 
-Because the daemon process is stable across CLI invocations, Xcode only shows the permission prompt once per session.
+Because the daemon process is stable across CLI invocations, commands reuse its granted agent permission until it expires or is revoked. Folder permissions are managed separately by Xcode.
 
 ## State Files
 

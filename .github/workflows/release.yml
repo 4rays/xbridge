@@ -20,16 +20,49 @@ jobs:
       - name: Build
         run: swift build -c release
 
+      - name: Import signing identity
+        env:
+          CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_SIGNING_CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/xbridge-signing.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/xbridge-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+          printf '%s' "$CERTIFICATE_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" -k "$KEYCHAIN_PATH" -f pkcs12 -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
       - name: Package
         run: |
           rm -rf /tmp/xbridge-bin
           mkdir /tmp/xbridge-bin
           cp .build/release/xbridge .build/release/xbridged /tmp/xbridge-bin/
-          install -m 755 scripts/allow-xcode-access.applescript /tmp/xbridge-bin/xbridge-allow
+          for binary in xbridge xbridged; do
+            codesign --force --sign "Developer ID Application: Four Rays AB (RGS98ZRDY6)" \
+              --keychain "$RUNNER_TEMP/xbridge-signing.keychain-db" \
+              --identifier "net.4rays.$binary" --options runtime --timestamp \
+              "/tmp/xbridge-bin/$binary"
+            codesign --verify --strict --verbose=2 "/tmp/xbridge-bin/$binary"
+            codesign -dv --verbose=4 "/tmp/xbridge-bin/$binary"
+          done
           install -m 644 skills/xbridge/SKILL.md /tmp/xbridge-bin/xbridge-skill.md
           cd /tmp
           tar -czf xbridge-${VERSION}-macos.tar.gz xbridge-bin/
           echo "SHA256=$(shasum -a 256 xbridge-${VERSION}-macos.tar.gz | awk '{print $1}')" >> $GITHUB_ENV
+
+      - name: Remove signing credentials
+        if: ${{ always() }}
+        run: |
+          rm -f "$RUNNER_TEMP/xbridge-signing.p12"
+          if [[ -f "$RUNNER_TEMP/xbridge-signing.keychain-db" ]]; then
+            security delete-keychain "$RUNNER_TEMP/xbridge-signing.keychain-db"
+          fi
 
       - name: Verify bundled skill
         run: |
@@ -59,7 +92,7 @@ jobs:
             -e "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA256}\"|" \
             -e "s|version \"[0-9.]*\"|version \"${VERSION}\"|" \
             Formula/xbridge.rb
-          ruby -e 'p = "Formula/xbridge.rb"; s = File.read(p); unless s.include?(%q{bin.install "xbridge-allow"}); abort "missing xbridged install" unless s.include?(%q{    bin.install "xbridged"}); s = s.sub(%q{    bin.install "xbridged"}, %Q{    bin.install "xbridged"\n    bin.install "xbridge-allow"}); end; unless s.include?(%q{pkgshare.install "xbridge-skill.md"}); abort "missing xbridge-allow install" unless s.include?(%q{    bin.install "xbridge-allow"}); s = s.sub(%q{    bin.install "xbridge-allow"}, %Q{    bin.install "xbridge-allow"\n    pkgshare.install "xbridge-skill.md"}); end; File.write(p, s)'
+          ruby -e 'p = "Formula/xbridge.rb"; s = File.read(p); s = s.lines.reject { |line| line.include?(%q{bin.install "xbridge-allow"}) }.join; unless s.include?(%q{pkgshare.install "xbridge-skill.md"}); abort "missing xbridged install" unless s.include?(%q{    bin.install "xbridged"}); s = s.sub(%q{    bin.install "xbridged"}, %Q{    bin.install "xbridged"\n    pkgshare.install "xbridge-skill.md"}); end; File.write(p, s)'
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/xbridge.rb

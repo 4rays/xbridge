@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import XbridgeCore
 
@@ -37,29 +36,27 @@ struct OutputFormatter {
     let daemon = result["daemon"]?.stringValue ?? "?"
     let bridge = result["bridge"]?.stringValue ?? "?"
     let tools = result["tools"]?.intValue.map(String.init) ?? "?"
-    let xcodeRunning = NSWorkspace.shared.runningApplications
-      .contains { $0.bundleIdentifier == "com.apple.dt.Xcode" }
-    let xcode = xcodeRunning ? "open" : "closed"
-    let effectiveBridge = xcodeRunning ? bridge : "unhealthy"
+
     var lines = """
       daemon : \(daemon)
-      bridge : \(effectiveBridge)
+      bridge : \(bridge)
       tools  : \(tools)
-      xcode  : \(xcode)
       """
-    if !xcodeRunning {
-      lines += "\n\n→ open Xcode first: open -a Xcode"
-    } else {
-      switch effectiveBridge {
-      case "unhealthy", "down":
-        lines += "\n\n→ open Xcode with a project and ensure MCP is enabled"
-      case "awaiting-permission":
-        lines += "\n\n→ from the project root, run xbridge status --fix (or pass --project <path>)"
-      case "linking":
-        lines += "\n\n→ bridge is starting, run status again in a moment"
-      default:
-        break
-      }
+
+    switch bridge {
+    case "unhealthy", "down":
+      lines +=
+        "\n\n→ inspect the native MCP server status above; ensure Xcode MCP is enabled and a project is open"
+
+    case "awaiting-permission":
+      lines +=
+        "\n\n→ run xbridge status --fix for native permission status and human approval instructions"
+
+    case "linking":
+      lines += "\n\n→ bridge is starting, run status again in a moment"
+
+    default:
+      break
     }
     return lines
   }

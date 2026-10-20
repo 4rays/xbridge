@@ -3,16 +3,16 @@
 ### Requirement: Transparent permission-grant recovery
 The daemon SHALL detect when a `tools/call` causes `xcrun mcpbridge` to exit (denial-suspected death), respawn the bridge, and retry the original call — without surfacing bridge lifecycle details to the caller.
 
-#### Scenario: Tool call succeeds after user approves Xcode dialog
+#### Scenario: Tool call succeeds after user approves native request
 - **WHEN** an agent calls any tool command and `mcpbridge` exits during that call
-- **AND** the user clicks Allow in the Xcode permission dialog within 45 seconds
+- **AND** the user approves the matching native permission request within 45 seconds
 - **THEN** the daemon retries the call and returns the real tool result to the caller
 - **AND** the caller receives no indication that a retry occurred
 
 #### Scenario: Caller receives structured error if budget elapses
 - **WHEN** an agent calls any tool command and `mcpbridge` exits during that call
-- **AND** the user does not approve the Xcode dialog within 45 seconds
-- **THEN** the daemon returns a `WAITING_FOR_PERMISSION` error with message: "Xcode is waiting for permission. Click Allow in the Xcode dialog, then re-run the command."
+- **AND** the user does not approve the native permission request within 45 seconds
+- **THEN** the daemon returns a `WAITING_FOR_PERMISSION` error directing the caller to `xbridge status --fix`, human approval in a terminal, and retrying the original command
 
 #### Scenario: Concurrent tool calls during permission wait are serialized
 - **WHEN** multiple tool calls arrive while `state == .awaitingGrant`
