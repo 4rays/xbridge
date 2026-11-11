@@ -71,6 +71,7 @@ actor MCPClient {
     let budget: TimeInterval = 45
     let start = Date()
     var attempt = 0
+    var restartedStoppedBridge = false
 
     while true {
       do {
@@ -78,7 +79,19 @@ actor MCPClient {
       } catch XbridgeError.bridgeNotRunning {
         let cause = await bridge.lastTerminationCause
         guard cause == .duringToolCall else {
-          throw XbridgeError.xcodeUnavailable
+          // The bridge exited outside a tool call (for example, an idle exit) and
+          // linkState is still .ready. Start it again one time, then retry the call.
+          guard !restartedStoppedBridge else { throw XbridgeError.xcodeUnavailable }
+          restartedStoppedBridge = true
+          logger.info("Bridge is not running (last exit: \(cause)) — restarting before tool call")
+
+          do {
+            try await respawnAndHandshake()
+          } catch {
+            throw XbridgeError.xcodeUnavailable
+          }
+
+          continue
         }
         guard Date().timeIntervalSince(start) < budget else {
           linkState = .down

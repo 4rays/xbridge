@@ -169,7 +169,7 @@ Installs `xbridge` and `xbridged` to `~/.local/bin` and the bundled skill to `~/
 | `device-start <session> [device]`      | Start a workspace-bound device session|
 | `device-session <device> <session>`    | Start a device session without a workspace |
 | `device-end <key>`                     | End a device session                  |
-| `device-install <key>`                 | Build, install, and run on the session device |
+| `device-install <key> [--arg <value>]... [--env KEY=VALUE]... [--no-inherit]` | Build, install, and run on the session device; scheme arguments and environment are kept unless `--no-inherit` |
 | `device-interact <key> [command] [bundle-id]` | Synthesize a device event      |
 | `tools`                                | List all MCP tools from the bridge    |
 | `tool-schema <name>`                   | Show input schema for a tool          |

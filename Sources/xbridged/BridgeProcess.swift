@@ -34,13 +34,27 @@ actor BridgeProcess {
   private var readTask: Task<Void, Never>?
   private let logger: Logger
   private let developerDir: String?
+  private let executableURL: URL
+  private let arguments: [String]
 
   // Keep process and pipes alive via @unchecked Sendable container
   private nonisolated(unsafe) var handles: BridgeHandles?
 
-  init(logger: Logger, developerDir: String? = nil) {
+  init(
+    logger: Logger,
+    developerDir: String? = nil,
+    executableURL: URL = URL(fileURLWithPath: "/usr/bin/xcrun"),
+    arguments: [String] = ["mcpbridge"]
+  ) {
     self.logger = logger
     self.developerDir = developerDir
+    self.executableURL = executableURL
+    self.arguments = arguments
+  }
+
+  var processID: Int32? {
+    if case .running(let pid) = state { return pid }
+    return nil
   }
 
   var isRunning: Bool {
@@ -62,8 +76,8 @@ actor BridgeProcess {
     state = .starting
 
     let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
-    process.arguments = ["mcpbridge"]
+    process.executableURL = executableURL
+    process.arguments = arguments
 
     if let developerDir {
       var env = ProcessInfo.processInfo.environment
@@ -79,8 +93,9 @@ actor BridgeProcess {
     process.standardOutput = stdoutPipe
     process.standardError = stderrPipe
 
-    process.terminationHandler = { @Sendable [weak self] _ in
-      Task { await self?.handleTermination() }
+    process.terminationHandler = { @Sendable [weak self] process in
+      let pid = process.processIdentifier
+      Task { await self?.handleTermination(pid: pid) }
     }
 
     do {
@@ -101,7 +116,11 @@ actor BridgeProcess {
     logger.info("Bridge started with PID \(process.processIdentifier)")
 
     startStderrReader(fd: stderrPipe.fileHandleForReading.fileDescriptor)
-    startStdoutReader(fd: stdoutPipe.fileHandleForReading.fileDescriptor)
+
+    startStdoutReader(
+      fd: stdoutPipe.fileHandleForReading.fileDescriptor,
+      pid: process.processIdentifier
+    )
   }
 
   func stop() async {
@@ -198,8 +217,10 @@ actor BridgeProcess {
     }
   }
 
-  private func handleTermination() {
-    guard case .running = state else { return }
+  /// Called by the process termination handler and by the stdout reader. Both can run
+  /// after a restart, so ignore calls for a process that is not the current one.
+  private func handleTermination(pid: Int32) {
+    guard case .running(let currentPID) = state, currentPID == pid else { return }
     // Compute cause before failing pending so callers can read it immediately after resuming.
     let methods = Set(pendingMethods.values)
     lastTerminationCause = methods.contains("tools/call") ? .duringToolCall
@@ -225,12 +246,13 @@ actor BridgeProcess {
 
   // MARK: - I/O readers
 
-  private func startStdoutReader(fd: Int32) {
+  private func startStdoutReader(fd: Int32, pid: Int32) {
     readTask = Task { [weak self] in
       for await response in Self.responseStream(fd: fd) {
         await self?.deliverResponse(response)
       }
-      await self?.handleTermination()
+
+      await self?.handleTermination(pid: pid)
     }
   }
 

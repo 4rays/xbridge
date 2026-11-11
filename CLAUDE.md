@@ -13,7 +13,7 @@
 - `swift build -c release` — release build
 - `make install` — release build + install to `~/.local/bin` (no sudo needed)
 - Binaries: `.build/debug/xbridge`, `.build/debug/xbridged`
-- `swift test` — run unit tests (XbridgeCoreTests: LocalRPC, MCPMessages)
+- `swift test` — run unit tests (XbridgeCoreTests, xbridgeTests for CLI parsing, xbridgedTests for bridge restart against a fake `/bin/sh` MCP server)
 
 ## Running
 
