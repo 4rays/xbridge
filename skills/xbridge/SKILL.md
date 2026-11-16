@@ -274,6 +274,16 @@ xbridge docs "SwiftUI List" SwiftUI
 
 > **Note:** `docs` output can be large (30KB+). Use narrow, specific queries and pass a framework name to limit results.
 
+### Apple's Xcode skills
+
+Xcode provides Apple-written agent skills (SwiftUI, App Intents, Swift Testing, security settings, `xctrace`, and more). xbridge does not bundle them, because they change with each Xcode version. To get the skills for the selected Xcode, export them (Xcode must be open):
+
+```bash
+xcrun agent skills export --output-dir ~/.agents/xcode-skills
+```
+
+Use those skills for Apple API guidance. Do not use Xcode's `device-interaction` skill: xbridge replaces it. That skill calls the MCP tools directly and names `DeviceEventSynthesize`, but the live tool is `DeviceInteractionSynthesize`. It also starts workspace sessions, which are broken on Xcode 27.0.0. Use [Drive a simulator](#drive-a-simulator-device-hub) instead.
+
 ### Run on a simulator
 
 Classify the request before choosing a command:
@@ -401,7 +411,7 @@ xbridge device-interact "Verify Login Flow" "t 125 215" com.apple.springboard
 - End the session with `device-end` as soon as the flow is done. Keeping it open is expensive.
 - Idle expiry is Xcode's Device Hub session store (~120s; cleanup is async, so a session may still work at 125s and be gone by 180s). Pauses under two minutes are fine. After that, `device-session` again. Death is not caused by `xbridged` restart, workspace loss, or permission loss.
 - If a later interact returns `Session not found`, start a new session. Do not retry the dead key.
-- Apple's tool text tells you to spawn a `device-interaction` subagent. Drive the same commands from this CLI instead; do not look for a separate skill.
+- Apple's tool text and Xcode's `device-interaction` skill tell you to spawn a `device-interaction` subagent that calls the MCP tools directly. Drive the same commands from this CLI instead (see [Apple's Xcode skills](#apples-xcode-skills)).
 
 #### Launch arguments and environment variables
 
