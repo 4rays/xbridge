@@ -40,6 +40,10 @@ First-class subcommands cover daily Xcode 27 workflows (workspaces, schemes, des
 
 To check what tools the connected Xcode actually exposes: `xbridge tools`
 
+## Skill Scope
+
+`skills/xbridge/SKILL.md` is the source of the instructions shipped by `xbridge skill`. Keep it focused on the CLI's interfaces to Apple's Xcode MCP server and Device Hub. Do not add third-party tool guidance, general simulator lifecycle management, or project-specific development recipes. Describe supported operations positively rather than listing unrelated command-line tools to prohibit. Workflow composition belongs to the caller, not this tool reference. Do not vendor the document into dotfiles or project repositories.
+
 ## Swift Concurrency (Swift 6)
 
 - All global state must be `Sendable`; `Command` closures need `@Sendable`
