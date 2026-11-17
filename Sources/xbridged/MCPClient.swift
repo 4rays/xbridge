@@ -15,7 +15,8 @@ actor MCPClient {
   private(set) var knownTools: [MCPTool] = []
   private(set) var linkState: LinkState = .down
   private var consecutiveHandshakeFailures = 0
-  private var isRespawning = false
+  /// The restart in progress. Concurrent callers wait for it instead of starting a second one.
+  private var respawnTask: Task<Void, Error>?
 
   init(bridge: BridgeProcess, logger: Logger) {
     self.bridge = bridge
@@ -71,6 +72,7 @@ actor MCPClient {
     let budget: TimeInterval = 45
     let start = Date()
     var attempt = 0
+    var restartedStoppedBridge = false
 
     while true {
       do {
@@ -78,7 +80,19 @@ actor MCPClient {
       } catch XbridgeError.bridgeNotRunning {
         let cause = await bridge.lastTerminationCause
         guard cause == .duringToolCall else {
-          throw XbridgeError.xcodeUnavailable
+          // The bridge exited outside a tool call (for example, an idle exit) and
+          // linkState is still .ready. Start it again one time, then retry the call.
+          guard !restartedStoppedBridge else { throw XbridgeError.xcodeUnavailable }
+          restartedStoppedBridge = true
+          logger.info("Bridge is not running (last exit: \(cause)) — restarting before tool call")
+
+          do {
+            try await respawnAndHandshake()
+          } catch {
+            throw XbridgeError.xcodeUnavailable
+          }
+
+          continue
         }
         guard Date().timeIntervalSince(start) < budget else {
           linkState = .down
@@ -112,10 +126,17 @@ actor MCPClient {
   }
 
   private func respawnAndHandshake() async throws {
-    guard !isRespawning else { return }
-    isRespawning = true
-    defer { isRespawning = false }
+    if let respawnTask {
+      return try await respawnTask.value
+    }
 
+    let task = Task { try await self.performRespawn() }
+    respawnTask = task
+    defer { respawnTask = nil }
+    try await task.value
+  }
+
+  private func performRespawn() async throws {
     if await bridge.isRunning {
       await bridge.stop()
     }

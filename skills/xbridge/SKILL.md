@@ -183,7 +183,7 @@ Commands most likely to need a timeout: `build`, `run`, `test`, `test-run`, `bui
 | `xbridge device-start <session> [device]`                  | Start a workspace-bound device session           |
 | `xbridge device-session <device> <session>`                | Start a device session without a workspace       |
 | `xbridge device-end <key>`                                 | End a device session                             |
-| `xbridge device-install <key>`                             | Build, install, and run on the session device    |
+| `xbridge device-install <key> [--arg <v>]... [--env K=V]... [--no-inherit]` | Build, install, and run on the session device    |
 | `xbridge device-interact <key> [command] [bundle-id]`      | Synthesize a device event (omit command to snapshot) |
 
 `device-start` / `device-install` take `--workspace` when several workspaces are open. `device-session`, `device-end`, and `device-interact` do not.
@@ -274,6 +274,16 @@ xbridge docs "SwiftUI List" SwiftUI
 
 > **Note:** `docs` output can be large (30KB+). Use narrow, specific queries and pass a framework name to limit results.
 
+### Apple's Xcode skills
+
+Xcode provides Apple-written agent skills (SwiftUI, App Intents, Swift Testing, security settings, `xctrace`, and more). xbridge does not bundle them, because they change with each Xcode version. To get the skills for the selected Xcode, export them (Xcode must be open):
+
+```bash
+xcrun agent skills export --output-dir ~/.agents/xcode-skills
+```
+
+Use those skills for Apple API guidance. Do not use Xcode's `device-interaction` skill: xbridge replaces it. That skill calls the MCP tools directly and names `DeviceEventSynthesize`, but the live tool is `DeviceInteractionSynthesize`. It also starts workspace sessions, which are broken on Xcode 27.0.0. Use [Drive a simulator](#drive-a-simulator-device-hub) instead.
+
 ### Run on a simulator
 
 Classify the request before choosing a command:
@@ -317,7 +327,7 @@ xbridge device-interact "Verify Login Flow"
 # snapshot only — returns hierarchyPath + screenshotPath
 
 xbridge device-interact "Verify Login Flow" "t 242 822"
-# tap hitPoint from the latest hierarchy (never guess from the screenshot)
+# tap hitPoint from the latest hierarchy (screenshot estimates are a fallback only)
 
 xbridge device-end "Verify Login Flow"
 ```
@@ -365,7 +375,33 @@ Do **not** use English verbs: `tap`, `swipe`, `scroll`, `type`, `text`, `home`, 
 
 Always take coordinates from `hitPoint: {x, y}` in the latest hierarchy dump. Example: `Button, {{190.8, 795.0}, {103.3, 54.0}}, label: 'Messages', hitPoint: {242.4, 822.0}` → `t 242 822`.
 
+`hitPoint` rules:
+
+- Snapshot before the first interaction. Do not tap from a hierarchy that is older than the last interaction.
+- For a toggle, switch, or slider, tap the nested control element (`Switch`, `Slider`), not the row label near it.
+- If a `hitPoint` tap has no effect, snapshot again and retry once. The element can move during an animation. If the retry also has no effect, report the failure. Do not retry again and again.
+- Use a position that you estimate from the screenshot only after a `hitPoint` tap and its retry had no effect.
+- An element marked `isRemoteLeafPlaceholder` does not report its child elements. To tap inside it, estimate the position from the screenshot.
+
 After each interact, read `applicationState` and the new hierarchy. Confirm the expected control is `Selected` (or the screen title changed) before the next tap.
+
+#### Overlapping apps (`activationBundleId`)
+
+When windows from more than one app are on screen (for example, a system alert, a share sheet, or Safari above your app), each hierarchy line gets an `activationBundleId: <bundle-id>` suffix:
+
+```
+UIButton "Allow" {{110, 205}, {30, 20}}, hitPoint: {125.0, 215.0}, activationBundleId: com.apple.springboard
+```
+
+To interact with that element, pass its `activationBundleId` as the third `device-interact` argument. This makes the app active, then sends the command:
+
+```bash
+xbridge device-interact "Verify Login Flow" "t 125 215" com.apple.springboard
+```
+
+- Use the bundle ID from the line of the element that you tap. It is not always your app's bundle ID.
+- To make an app active with no other event, send a quoted wait: `"w 1"`.
+- Activation is expensive. Pass a bundle ID only when the target line has `activationBundleId`, for a launch-only activate, or when the app is in the background (`RunningInBackground`).
 
 #### Session rules
 
@@ -375,7 +411,24 @@ After each interact, read `applicationState` and the new hierarchy. Confirm the 
 - End the session with `device-end` as soon as the flow is done. Keeping it open is expensive.
 - Idle expiry is Xcode's Device Hub session store (~120s; cleanup is async, so a session may still work at 125s and be gone by 180s). Pauses under two minutes are fine. After that, `device-session` again. Death is not caused by `xbridged` restart, workspace loss, or permission loss.
 - If a later interact returns `Session not found`, start a new session. Do not retry the dead key.
-- Apple's tool text tells you to spawn a `device-interaction` subagent. Drive the same commands from this CLI instead; do not look for a separate skill.
+- Apple's tool text and Xcode's `device-interaction` skill tell you to spawn a `device-interaction` subagent that calls the MCP tools directly. Drive the same commands from this CLI instead (see [Apple's Xcode skills](#apples-xcode-skills)).
+
+#### Launch arguments and environment variables
+
+`run` (`RunProject`) cannot set launch arguments or environment variables. Only `device-install` (`DeviceInteractionInstallAndRun`) can:
+
+```bash
+xbridge --workspace workspace1 device-install "Verify Login Flow" \
+  --arg --reset-state --env DEBUG_MODE=1
+```
+
+- `--arg <value>` adds one launch argument. Repeat it for more arguments. It takes the next token as-is, so values that start with `--` are accepted. `--arg=<value>` also works.
+- `--env KEY=VALUE` adds one environment variable. Repeat it for more variables. The value can be empty (`KEY=`).
+- By default, the scheme's arguments and environment are kept: `device-install` adds Xcode's `$(inherited)` token for you. To put the scheme's arguments at a different position, pass `--arg '$(inherited)'` (in single quotes) where you want them.
+- `--no-inherit` replaces the scheme's arguments and environment for this run. Without other flags, it launches with no arguments and no environment from the scheme.
+- With no flags, the scheme's arguments and environment stay unchanged.
+- Use these flags for one run. Do not edit the scheme. The flags have no lasting effect on the user's configuration.
+- The session key must come from `device-start` (workspace-bound). On Xcode 27.0.0, you cannot interact with or end that session after the install. Use the [Device Hub bug recipe](#xcode-2700-device-hub-bug-workspace-sessions-cannot-interact) for taps after the install.
 
 ### Local simulator run (replaces sim-bridge)
 

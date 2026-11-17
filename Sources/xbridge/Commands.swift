@@ -552,12 +552,13 @@ enum Commands {
 
   static let deviceInstallCommand = Command(
     name: "device-install",
-    usage: "device-install <key>      Build, install, and run on the session device",
+    usage:
+      "device-install <key> [--arg <value>]... [--env KEY=VALUE]... [--no-inherit]  Build, install, and run on the session device",
     minArgs: 1
   ) { args in
     callToolRequest(
       tool: XcodeTool.deviceInteractionInstallAndRun,
-      arguments: ["interactionSessionKey": .string(args[0])]
+      arguments: .object(try DeviceInstallOptions(parsing: args).toolArguments)
     )
   }
 

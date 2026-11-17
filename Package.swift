@@ -35,6 +35,11 @@ let package = Package(
       name: "xbridgeTests",
       dependencies: ["XbridgeCore", "xbridge"],
       path: "Tests/xbridgeTests"
+    ),
+    .testTarget(
+      name: "xbridgedTests",
+      dependencies: ["XbridgeCore", "xbridged"],
+      path: "Tests/xbridgedTests"
     )
   ],
   swiftLanguageModes: [.v6]
