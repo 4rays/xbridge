@@ -15,7 +15,8 @@ actor MCPClient {
   private(set) var knownTools: [MCPTool] = []
   private(set) var linkState: LinkState = .down
   private var consecutiveHandshakeFailures = 0
-  private var isRespawning = false
+  /// The restart in progress. Concurrent callers wait for it instead of starting a second one.
+  private var respawnTask: Task<Void, Error>?
 
   init(bridge: BridgeProcess, logger: Logger) {
     self.bridge = bridge
@@ -125,10 +126,17 @@ actor MCPClient {
   }
 
   private func respawnAndHandshake() async throws {
-    guard !isRespawning else { return }
-    isRespawning = true
-    defer { isRespawning = false }
+    if let respawnTask {
+      return try await respawnTask.value
+    }
 
+    let task = Task { try await self.performRespawn() }
+    respawnTask = task
+    defer { respawnTask = nil }
+    try await task.value
+  }
+
+  private func performRespawn() async throws {
     if await bridge.isRunning {
       await bridge.stop()
     }

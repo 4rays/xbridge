@@ -99,6 +99,27 @@ struct MCPClientRestartTests {
     await client.stop()
   }
 
+  @Test("Concurrent calls after an idle exit share one restart")
+  func concurrentCallsShareRestart() async throws {
+    let fake = try FakeBridge()
+    defer { fake.remove() }
+
+    let (bridge, client) = fake.makeClient()
+    await client.start()
+    try await killIdleBridge(bridge)
+
+    async let first = client.callTool(name: XcodeTool.listWorkspaces, arguments: [:])
+    async let second = client.callTool(name: XcodeTool.listWorkspaces, arguments: [:])
+    let results = try await [first, second]
+
+    for result in results {
+      #expect(result["content"]?[0]?["text"] == .string("ok"))
+    }
+
+    #expect(await client.linkState == .ready)
+    await client.stop()
+  }
+
   @Test("Reports Xcode unavailable when the restart fails")
   func reportsUnavailableWhenRestartFails() async throws {
     let fake = try FakeBridge()
